@@ -4,7 +4,6 @@
 #include <QList>
 #include <QString>
 #include "glm.h"
-#include <iostream>
 
 
 /**
