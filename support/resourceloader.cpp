@@ -47,6 +47,40 @@ GLuint ResourceLoader::loadCubeMap(QList<QFile *> files)
     return id;
 }
 
+GLuint ResourceLoader::loadtexture2D(QFile * file)
+{
+
+
+    // Generate an ID
+    GLuint id;
+    glGenTextures(1, &id);
+
+    // Bind the texture
+    glBindTexture(GL_TEXTURE_2D, id);
+
+    // Load and build mipmaps for each image
+
+    QImage image, texture;
+    image.load(file->fileName());
+    image = image.mirrored(false, true);
+    texture = QGLWidget::convertToGLFormat(image);
+    texture = texture.scaledToWidth(1024, Qt::SmoothTransformation);
+    glTexImage2D(GL_TEXTURE_2D, 3, 3, texture.width(), texture.height(), 0, GL_RGBA,GL_UNSIGNED_BYTE, texture.bits());
+    gluBuild2DMipmaps(GL_TEXTURE_2D, 3, texture.width(), texture.height(), GL_RGBA, GL_UNSIGNED_BYTE, texture.bits());
+
+
+    // Set filter when pixel occupies more than one texture element
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
+    // Set filter when pixel smaller than one texture element
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    // Unbind the texture
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+    return id;
+}
+
+
 /**
     Loads an OBJ models from a file
   **/

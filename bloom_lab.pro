@@ -6,10 +6,12 @@ TEMPLATE = app
 INCLUDEPATH += lab \
     lib \
     math \
+    shape \
     support
 DEPENDPATH += lab \
     lib \
     math \
+    shape \
     support
 
 HEADERS += lab/glwidget.h \
@@ -18,8 +20,11 @@ HEADERS += lab/glwidget.h \
     math/vector.h \
     support/resourceloader.h \
     support/mainwindow.h \
+    lib/targa.h \
     support/camera.h \
-    lib/targa.h
+    shape/sphere.h \
+    shape/shape.h \
+    lib/CS123Common.h
 
 SOURCES += \
     lab/glwidget.cpp \
@@ -28,7 +33,9 @@ SOURCES += \
     support/resourceloader.cpp \
     support/mainwindow.cpp \
     support/main.cpp \
-    support/camera.cpp
+    shape/sphere.cpp \
+    support/camera.cpp \
+    shape/shape.cpp
 
 FORMS += mainwindow.ui \
     support/mainwindow.ui
@@ -39,6 +46,9 @@ OTHER_FILES += \
     shaders/reflect.vert \
     shaders/reflect.frag \
     shaders/brightpass.frag \
-    shaders/blur.frag
+    shaders/blur.frag \
+    shaders/terrain.frag \
+    shaders/terrain.vars \
+    shaders/terrain.vert
 
 RESOURCES +=

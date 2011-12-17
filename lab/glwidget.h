@@ -6,7 +6,7 @@
 #include <QString>
 #include <QTimer>
 #include <QTime>
-
+#include "sphere.h"
 #include "camera.h"
 #include "vector.h"
 #include "resourceloader.h"
@@ -55,13 +55,17 @@ private:
     float m_prevFps, m_fps;
     Vector2 m_prevMousePos;
     OrbitCamera m_camera;
-
+    sphere* m_sphere;
     // Resources
     QHash<QString, QGLShaderProgram *> m_shaderPrograms; // hash map of all shader programs
     QHash<QString, QGLFramebufferObject *> m_framebufferObjects; // hash map of all framebuffer objects
     Model m_dragon; // dragon model
     GLuint m_skybox; // skybox call list ID
     GLuint m_cubeMap; // cubeMap texture ID
+    GLuint m_t1;
+    GLuint m_t2;
+    GLuint m_t3;
+    GLuint m_t4;
     QFont m_font; // font for rendering text
 
 };

@@ -35,7 +35,7 @@ GLWidget::GLWidget(QWidget *parent) : QGLWidget(parent),
     m_camera.zoom = 3.5f;
     m_camera.theta = M_PI * 1.5f, m_camera.phi = 0.2f;
     m_camera.fovy = 60.f;
-
+    m_sphere = new sphere(500,500,false);
     connect(&m_timer, SIGNAL(timeout()), this, SLOT(update()));
 }
 
@@ -51,6 +51,7 @@ GLWidget::~GLWidget()
     glDeleteLists(m_skybox, 1);
     const_cast<QGLContext *>(context())->deleteTexture(m_cubeMap);
     glmDelete(m_dragon.model);
+    delete m_sphere;
 }
 
 /**
@@ -90,7 +91,7 @@ void GLWidget::initializeResources()
     // by the video card.  But that's a pain to do so we're not going to.
     cout << "--- Loading Resources ---" << endl;
 
-    m_dragon = ResourceLoader::loadObjModel("../lab09/models/xyzrgb_dragon.obj");
+    m_dragon = ResourceLoader::loadObjModel("../cs123_final/models/xyzrgb_dragon.obj");
     cout << "Loaded dragon..." << endl;
 
     m_skybox = ResourceLoader::loadSkybox();
@@ -102,7 +103,7 @@ void GLWidget::initializeResources()
     createShaderPrograms();
     cout << "Loaded shader programs..." << endl;
 
-    createFramebufferObjects(width(), height());
+    createFramebufferObjects(width(),height());
     cout << "Loaded framebuffer objects..." << endl;
 
     cout << " --- Finish Loading Resources ---" << endl;
@@ -114,6 +115,12 @@ void GLWidget::initializeResources()
 void GLWidget::loadCubeMap()
 {
     QList<QFile *> fileList;
+//    fileList.append(new QFile("../cs123_final/textures/1.png"));
+//    fileList.append(new QFile("../cs123_final/textures/1.png"));
+//    fileList.append(new QFile("../cs123_final/textures/1.png"));
+//    fileList.append(new QFile("../cs12* intensity3_final/textures/1.png"));
+//    fileList.append(new QFile("../cs123_final/textures/1.png"));
+//    fileList.append(new QFile("../cs123_final/textures/1.png"));
     fileList.append(new QFile("../lab09/textures/astra/posx.jpg"));
     fileList.append(new QFile("../lab09/textures/astra/negx.jpg"));
     fileList.append(new QFile("../lab09/textures/astra/posy.jpg"));
@@ -121,6 +128,13 @@ void GLWidget::loadCubeMap()
     fileList.append(new QFile("../lab09/textures/astra/posz.jpg"));
     fileList.append(new QFile("../lab09/textures/astra/negz.jpg"));
     m_cubeMap = ResourceLoader::loadCubeMap(fileList);
+
+
+    m_t1 = ResourceLoader::loadtexture2D(new QFile("/course/cs123/data/image/terrain/dirt.JPG"));
+    m_t2 = ResourceLoader::loadtexture2D(new QFile("/course/cs123/data/image/terrain/grass.JPG"));
+    m_t3 = ResourceLoader::loadtexture2D(new QFile("/course/cs123/data/image/terrain/rock.JPG"));
+    m_t4 = ResourceLoader::loadtexture2D(new QFile("/course/cs123/data/image/terrain/snow.JPG"));
+
 }
 
 /**
@@ -134,7 +148,9 @@ void GLWidget::createShaderPrograms()
     m_shaderPrograms["refract"] = ResourceLoader::newShaderProgram(ctx, "../lab09/shaders/refract.vert",
                                                                    "../lab09/shaders/refract.frag");
     m_shaderPrograms["brightpass"] = ResourceLoader::newFragShaderProgram(ctx, "../lab09/shaders/brightpass.frag");
-    m_shaderPrograms["blur"] = ResourceLoader::newFragShaderProgram(ctx, "../lab09/shaders/blur.frag");
+    m_shaderPrograms["terrain"] = ResourceLoader::newShaderProgram(ctx, "../cs123_final/shaders/terrain.vert",
+                                                                   "../cs123_final/shaders/terrain.frag");
+    m_shaderPrograms["blur"] = ResourceLoader::newFragShaderProgram(ctx, "../cs123_final/shaders/blur.frag");
 }
 
 /**
@@ -272,36 +288,80 @@ void GLWidget::renderScene() {
 
     // Enable cube maps and draw the skybox
     glEnable(GL_TEXTURE_CUBE_MAP);
+        glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_CUBE_MAP, m_cubeMap);
     glCallList(m_skybox);
 
     // Enable culling (back) faces for rendering the dragon
     glEnable(GL_CULL_FACE);
-
     // Render the dragon with the refraction shader bound
-    glActiveTexture(GL_TEXTURE0);
-    m_shaderPrograms["refract"]->bind();
-    m_shaderPrograms["refract"]->setUniformValue("CubeMap", GL_TEXTURE0);
-    glPushMatrix();
-    glTranslatef(-1.25f, 0.f, 0.f);
-    glCallList(m_dragon.idx);
-    glPopMatrix();
-    m_shaderPrograms["refract"]->release();
-
-    // Render the dragon with the reflection shader bound
-    m_shaderPrograms["reflect"]->bind();
-    m_shaderPrograms["reflect"]->setUniformValue("CubeMap", GL_TEXTURE0);
-    glPushMatrix();
-    glTranslatef(1.25f,0.f,0.f);
-    glCallList(m_dragon.idx);
-    glPopMatrix();
-    m_shaderPrograms["reflect"]->release();
-
-    // Disable culling, depth testing and cube maps
-    glDisable(GL_CULL_FACE);
-    glDisable(GL_DEPTH_TEST);
     glBindTexture(GL_TEXTURE_CUBE_MAP,0);
     glDisable(GL_TEXTURE_CUBE_MAP);
+    glEnable(GL_TEXTURE_2D);
+//    m_shaderPrograms["terrain"]->bind();
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D,m_t1);
+//    m_shaderPrograms["terrain"]->setUniformValue("dirtTexture",GL_TEXTURE1);
+//    glActiveTexture(GL_TEXTURE2);
+//    glBindTexture(GL_TEXTURE_2D,m_t2);
+//     m_shaderPrograms["terrain"]->setUniformValue("grassTexture",GL_TEXTURE2);
+//    glActiveTexture(GL_TEXTURE3);
+//    glBindTexture(GL_TEXTURE_2D,m_t3);
+//     m_shaderPrograms["terrain"]->setUniformValue("rockTexture",GL_TEXTURE3);
+//    glActiveTexture(GL_TEXTURE4);
+//    glBindTexture(GL_TEXTURE_2D,m_t4);
+//    m_shaderPrograms["terrain"]->setUniformValue("snowTexture",GL_TEXTURE4);
+//    m_shaderPrograms["terrain"]->setUniformValue("dirtMin",-10);
+//    m_shaderPrograms["terrain"]->setUniformValue("dirtMax",-5);
+//    m_shaderPrograms["terrain"]->setUniformValue("grassMin",-5);
+//    m_shaderPrograms["terrain"]->setUniformValue("grassMax",0);
+//    m_shaderPrograms["terrain"]->setUniformValue("rockMin",0);
+//    m_shaderPrograms["terrain"]->setUniformValue("rockMax",5);
+//    m_shaderPrograms["terrain"]->setUniformValue("snowMin",5);
+//    m_shaderPrograms["terrain"]->setUniformValue("snowMax",10);
+//    m_shaderPrograms["refract"]->bind();
+//    m_shaderPrograms["refract"]->setUniformValue("CubeMap", GL_TEXTURE0);
+
+    //    glBegin(GL_QUADS);
+    //    glTexCoord2f(0,0);
+    //    glVertex3f(0,0,0);
+    //    glTexCoord2f(1,0);
+    //    glVertex3f(1,0,0);
+    //    glTexCoord2f(1,1);
+    //    glVertex3f(1,1,0);
+    //    glTexCoord2f(0,1);
+    //    glVertex3f(0,1,0);
+    //    glEnd();
+
+
+    glPushMatrix();
+    //glTranslatef(-1.25f, 0.f, 0.f);
+//    glCallList(m_dragon.idx);
+
+    m_sphere->drawshape();
+    glPopMatrix();
+    m_shaderPrograms["terrain"]->release();
+//    m_shaderPrograms["refract"]->release();
+
+
+//    glEnable(GL_TEXTURE_CUBE_MAP);
+//    // Render the dragon with the reflection shader bound
+//    m_shaderPrograms["reflect"]->bind();
+//    m_shaderPrograms["reflect"]->setUniformValue("CubeMap", GL_TEXTURE0);
+//    glPushMatrix();
+//    glTranslatef(1.25f,0.f,0.f);
+//    glCallList(m_dragon.idx);
+//    glPopMatrix();
+//    m_shaderPrograms["reflect"]->release();
+
+    // Disable culling, depth testing and cube maps
+    glActiveTexture(GL_TEXTURE0);
+    glDisable(GL_CULL_FACE);
+    glDisable(GL_DEPTH_TEST);
+//    glBindTexture(GL_TEXTURE_2D,0);
+//    glDisable(GL_TEXTURE_2D);
+//    glBindTexture(GL_TEXTURE_CUBE_MAP,0);
+//    glDisable(GL_TEXTURE_CUBE_MAP);
 }
 
 /**
