@@ -35,7 +35,7 @@ GLWidget::GLWidget(QWidget *parent) : QGLWidget(parent),
     m_camera.zoom = 3.5f;
     m_camera.theta = M_PI * 1.5f, m_camera.phi = 0.2f;
     m_camera.fovy = 60.f;
-    m_sphere = new sphere(500,500,false);
+    m_sphere = new sphere(1000,500,false);
     connect(&m_timer, SIGNAL(timeout()), this, SLOT(update()));
 }
 
@@ -130,7 +130,8 @@ void GLWidget::loadCubeMap()
     m_cubeMap = ResourceLoader::loadCubeMap(fileList);
 
 
-    m_t1 = ResourceLoader::loadtexture2D(new QFile("/course/cs123/data/image/terrain/dirt.JPG"));
+    //m_t1 = ResourceLoader::loadtexture2D(new QFile("/course/cs123/data/image/terrain/dirt.JPG"));
+    m_t1 = ResourceLoader::loadtexture2D(new QFile("../cs123_final/textures/planet_Trantor.png"));
     m_t2 = ResourceLoader::loadtexture2D(new QFile("/course/cs123/data/image/terrain/grass.JPG"));
     m_t3 = ResourceLoader::loadtexture2D(new QFile("/course/cs123/data/image/terrain/rock.JPG"));
     m_t4 = ResourceLoader::loadtexture2D(new QFile("/course/cs123/data/image/terrain/snow.JPG"));

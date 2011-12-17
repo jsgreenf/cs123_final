@@ -19,7 +19,7 @@ public:
     int m_para1;
     int m_para2;
     double (*m_coordinates)[4]; //array to store points data
-
+    double (*m_textures)[2]; //array to store the textures
 
 protected:
     virtual void makearray() = 0;
