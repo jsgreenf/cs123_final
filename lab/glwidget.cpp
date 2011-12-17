@@ -35,7 +35,7 @@ GLWidget::GLWidget(QWidget *parent) : QGLWidget(parent),
     m_camera.zoom = 3.5f;
     m_camera.theta = M_PI * 1.5f, m_camera.phi = 0.2f;
     m_camera.fovy = 60.f;
-    m_sphere = new sphere(1000,500,false);
+    m_sphere = new sphere(500,500,false);
     connect(&m_timer, SIGNAL(timeout()), this, SLOT(update()));
 }
 
