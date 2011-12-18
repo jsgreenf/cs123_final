@@ -49,8 +49,6 @@ GLuint ResourceLoader::loadCubeMap(QList<QFile *> files)
 
 GLuint ResourceLoader::loadtexture2D(QFile * file)
 {
-
-
     // Generate an ID
     GLuint id;
     glGenTextures(1, &id);
@@ -59,7 +57,6 @@ GLuint ResourceLoader::loadtexture2D(QFile * file)
     glBindTexture(GL_TEXTURE_2D, id);
 
     // Load and build mipmaps for each image
-
     QImage image, texture;
     image.load(file->fileName());
     image = image.mirrored(false, true);

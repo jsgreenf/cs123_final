@@ -35,7 +35,10 @@ GLWidget::GLWidget(QWidget *parent) : QGLWidget(parent),
     m_camera.zoom = 3.5f;
     m_camera.theta = M_PI * 1.5f, m_camera.phi = 0.2f;
     m_camera.fovy = 60.f;
-    m_sphere = new sphere(500,500,false);
+    planet_sphere = new sphere(300,300,false);
+    water_sphere = new sphere(200,200,false);
+    cloud_sphere = new sphere(200,200,false);
+    sun_sphere = new sphere(50,50,false);
     connect(&m_timer, SIGNAL(timeout()), this, SLOT(update()));
 }
 
@@ -50,8 +53,10 @@ GLWidget::~GLWidget()
         delete fbo;
     glDeleteLists(m_skybox, 1);
     const_cast<QGLContext *>(context())->deleteTexture(m_cubeMap);
-    glmDelete(m_dragon.model);
-    delete m_sphere;
+    delete planet_sphere;
+    delete water_sphere;
+    delete cloud_sphere;
+    delete sun_sphere;
 }
 
 /**
@@ -91,9 +96,6 @@ void GLWidget::initializeResources()
     // by the video card.  But that's a pain to do so we're not going to.
     cout << "--- Loading Resources ---" << endl;
 
-    m_dragon = ResourceLoader::loadObjModel("../cs123_final/models/xyzrgb_dragon.obj");
-    cout << "Loaded dragon..." << endl;
-
     m_skybox = ResourceLoader::loadSkybox();
     cout << "Loaded skybox..." << endl;
 
@@ -115,26 +117,26 @@ void GLWidget::initializeResources()
 void GLWidget::loadCubeMap()
 {
     QList<QFile *> fileList;
-//    fileList.append(new QFile("../cs123_final/textures/1.png"));
-//    fileList.append(new QFile("../cs123_final/textures/1.png"));
-//    fileList.append(new QFile("../cs123_final/textures/1.png"));
-//    fileList.append(new QFile("../cs12* intensity3_final/textures/1.png"));
-//    fileList.append(new QFile("../cs123_final/textures/1.png"));
-//    fileList.append(new QFile("../cs123_final/textures/1.png"));
-    fileList.append(new QFile("../lab09/textures/astra/posx.jpg"));
-    fileList.append(new QFile("../lab09/textures/astra/negx.jpg"));
-    fileList.append(new QFile("../lab09/textures/astra/posy.jpg"));
-    fileList.append(new QFile("../lab09/textures/astra/negy.jpg"));
-    fileList.append(new QFile("../lab09/textures/astra/posz.jpg"));
-    fileList.append(new QFile("../lab09/textures/astra/negz.jpg"));
+//    fileList.append(new QFile("../cs123_final/textures/astra/posx.jpg"));
+//    fileList.append(new QFile("../cs123_final/textures/astra/negx.jpg"));
+//    fileList.append(new QFile("../cs123_final/textures/astra/posy.jpg"));
+//    fileList.append(new QFile("../cs123_final/textures/astra/negy.jpg"));
+//    fileList.append(new QFile("../cs123_final/textures/astra/posz.jpg"));
+//    fileList.append(new QFile("../cs123_final/textures/astra/negz.jpg"));
+
+    fileList.append(new QFile("../cs123_final/textures/nebula/PN_right1.png"));
+    fileList.append(new QFile("../cs123_final/textures/nebula/PN_left2.png"));
+    fileList.append(new QFile("../cs123_final/textures/nebula/PN_top3.png"));
+    fileList.append(new QFile("../cs123_final/textures/nebula/PN_bottom4.png"));
+    fileList.append(new QFile("../cs123_final/textures/nebula/PN_front5.png"));
+    fileList.append(new QFile("../cs123_final/textures/nebula/PN_back6.png"));
+
     m_cubeMap = ResourceLoader::loadCubeMap(fileList);
 
-
-    //m_t1 = ResourceLoader::loadtexture2D(new QFile("/course/cs123/data/image/terrain/dirt.JPG"));
-    m_t1 = ResourceLoader::loadtexture2D(new QFile("../cs123_final/textures/planet_Trantor.png"));
-    m_t2 = ResourceLoader::loadtexture2D(new QFile("/course/cs123/data/image/terrain/grass.JPG"));
-    m_t3 = ResourceLoader::loadtexture2D(new QFile("/course/cs123/data/image/terrain/rock.JPG"));
-    m_t4 = ResourceLoader::loadtexture2D(new QFile("/course/cs123/data/image/terrain/snow.JPG"));
+    m_t1 = ResourceLoader::loadtexture2D(new QFile("../cs123_final/textures/planet_Klendathu.png"));
+    m_t2 = ResourceLoader::loadtexture2D(new QFile("../cs123_final/textures/gstar-original.jpg"));
+    m_t3 = ResourceLoader::loadtexture2D(new QFile("../cs123_final/textures/clouds.jpg"));
+    //m_t4 = ResourceLoader::loadtexture2D(new QFile("/course/cs123/data/image/terrain/snow.JPG"));
 
 }
 
@@ -144,14 +146,11 @@ void GLWidget::loadCubeMap()
 void GLWidget::createShaderPrograms()
 {
     const QGLContext *ctx = context();
-    m_shaderPrograms["reflect"] = ResourceLoader::newShaderProgram(ctx, "../lab09/shaders/reflect.vert",
-                                                                   "../lab09/shaders/reflect.frag");
-    m_shaderPrograms["refract"] = ResourceLoader::newShaderProgram(ctx, "../lab09/shaders/refract.vert",
-                                                                   "../lab09/shaders/refract.frag");
-    m_shaderPrograms["brightpass"] = ResourceLoader::newFragShaderProgram(ctx, "../lab09/shaders/brightpass.frag");
+    m_shaderPrograms["reflect"] = ResourceLoader::newShaderProgram(ctx, "../cs123_final/shaders/reflect.vert",
+                                                                   "../cs123_final/shaders/reflect.frag");
     m_shaderPrograms["terrain"] = ResourceLoader::newShaderProgram(ctx, "../cs123_final/shaders/terrain.vert",
                                                                    "../cs123_final/shaders/terrain.frag");
-    m_shaderPrograms["blur"] = ResourceLoader::newFragShaderProgram(ctx, "../cs123_final/shaders/blur.frag");
+    m_shaderPrograms["clouds"] = ResourceLoader::newFragShaderProgram(ctx, "../cs123_final/shaders/clouds.frag");
 }
 
 /**
@@ -170,9 +169,6 @@ void GLWidget::createFramebufferObjects(int width, int height)
     // Allocate the secondary framebuffer obejcts for rendering textures to (post process effects)
     // These do not require depth attachments
     m_framebufferObjects["fbo_1"] = new QGLFramebufferObject(width, height, QGLFramebufferObject::NoAttachment,
-                                                             GL_TEXTURE_2D, GL_RGB16F_ARB);
-    // TODO: Create another framebuffer here.  Look up two lines to see how to do this... =.=
-    m_framebufferObjects["fbo_2"] = new QGLFramebufferObject(width, height, QGLFramebufferObject::NoAttachment,
                                                              GL_TEXTURE_2D, GL_RGB16F_ARB);
 }
 
@@ -234,47 +230,11 @@ void GLWidget::paintGL()
     renderScene();
     m_framebufferObjects["fbo_0"]->release();
 
-    // Copy the rendered scene into framebuffer 1
-    m_framebufferObjects["fbo_0"]->blitFramebuffer(m_framebufferObjects["fbo_1"],
-                                                   QRect(0, 0, width, height), m_framebufferObjects["fbo_0"],
-                                                   QRect(0, 0, width, height), GL_COLOR_BUFFER_BIT, GL_NEAREST);
-
     // TODO: Add drawing code here
     applyOrthogonalCamera(width, height);
-    glBindTexture(GL_TEXTURE_2D, m_framebufferObjects["fbo_1"]->texture());
+    glBindTexture(GL_TEXTURE_2D, m_framebufferObjects["fbo_0"]->texture());
     renderTexturedQuad(width, height, true);
     glBindTexture(GL_TEXTURE_2D, 0);
-
-    m_framebufferObjects["fbo_2"]->bind();
-    m_shaderPrograms["brightpass"]->bind();
-    glBindTexture(GL_TEXTURE_2D, m_framebufferObjects["fbo_1"]->texture());
-    renderTexturedQuad(width, height, true);
-    m_shaderPrograms["brightpass"]->release();
-    glBindTexture(GL_TEXTURE_2D, 0);
-    m_framebufferObjects["fbo_2"]->release();
-
-    // TODO: Uncomment this section in step 2 of the lab
-
-    float scales[] = {4.f,8.f,16.f,32.f};
-    for (int i = 0; i < 4; ++i)
-    {
-        // Render the blurred brightpass filter result to fbo 1
-        renderBlur(width / scales[i], height / scales[i]);
-
-        // Bind the image from fbo to a texture
-        glBindTexture(GL_TEXTURE_2D, m_framebufferObjects["fbo_1"]->texture());
-        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-
-        // Enable alpha blending and render the texture to the screen
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_ONE, GL_ONE);
-        glTranslatef(0.f, (scales[i] - 1) * -height, 0.f);
-        renderTexturedQuad(width * scales[i], height * scales[i], false);
-        glDisable(GL_BLEND);
-        glBindTexture(GL_TEXTURE_2D, 0);
-    }
-
 
     paintText();
 }
@@ -283,116 +243,89 @@ void GLWidget::paintGL()
   Renders the scene.  May be called multiple times by paintGL() if necessary.
 **/
 void GLWidget::renderScene() {
+
+    // hold a uniform time so that all elements that use it are synched
+    float elapsed = m_clock.elapsed()*.001;
+
     // Enable depth testing
     glEnable(GL_DEPTH_TEST);
     glClear(GL_DEPTH_BUFFER_BIT);
 
     // Enable cube maps and draw the skybox
     glEnable(GL_TEXTURE_CUBE_MAP);
-        glActiveTexture(GL_TEXTURE0);
+    glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_CUBE_MAP, m_cubeMap);
     glCallList(m_skybox);
+    glBindTexture(GL_TEXTURE_CUBE_MAP,0);
+    glDisable(GL_TEXTURE_CUBE_MAP);
 
     // Enable culling (back) faces for rendering the dragon
     glEnable(GL_CULL_FACE);
-    // Render the dragon with the refraction shader bound
-    glBindTexture(GL_TEXTURE_CUBE_MAP,0);
-    glDisable(GL_TEXTURE_CUBE_MAP);
+
+    // Render the planet with the terrain shader bound
     glEnable(GL_TEXTURE_2D);
-//    m_shaderPrograms["terrain"]->bind();
+    m_shaderPrograms["terrain"]->bind();
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D,m_t1);
-//    m_shaderPrograms["terrain"]->setUniformValue("dirtTexture",GL_TEXTURE1);
-//    glActiveTexture(GL_TEXTURE2);
-//    glBindTexture(GL_TEXTURE_2D,m_t2);
-//     m_shaderPrograms["terrain"]->setUniformValue("grassTexture",GL_TEXTURE2);
-//    glActiveTexture(GL_TEXTURE3);
-//    glBindTexture(GL_TEXTURE_2D,m_t3);
-//     m_shaderPrograms["terrain"]->setUniformValue("rockTexture",GL_TEXTURE3);
-//    glActiveTexture(GL_TEXTURE4);
-//    glBindTexture(GL_TEXTURE_2D,m_t4);
-//    m_shaderPrograms["terrain"]->setUniformValue("snowTexture",GL_TEXTURE4);
-//    m_shaderPrograms["terrain"]->setUniformValue("dirtMin",-10);
-//    m_shaderPrograms["terrain"]->setUniformValue("dirtMax",-5);
-//    m_shaderPrograms["terrain"]->setUniformValue("grassMin",-5);
-//    m_shaderPrograms["terrain"]->setUniformValue("grassMax",0);
-//    m_shaderPrograms["terrain"]->setUniformValue("rockMin",0);
-//    m_shaderPrograms["terrain"]->setUniformValue("rockMax",5);
-//    m_shaderPrograms["terrain"]->setUniformValue("snowMin",5);
-//    m_shaderPrograms["terrain"]->setUniformValue("snowMax",10);
-//    m_shaderPrograms["refract"]->bind();
-//    m_shaderPrograms["refract"]->setUniformValue("CubeMap", GL_TEXTURE0);
-
-    //    glBegin(GL_QUADS);
-    //    glTexCoord2f(0,0);
-    //    glVertex3f(0,0,0);
-    //    glTexCoord2f(1,0);
-    //    glVertex3f(1,0,0);
-    //    glTexCoord2f(1,1);
-    //    glVertex3f(1,1,0);
-    //    glTexCoord2f(0,1);
-    //    glVertex3f(0,1,0);
-    //    glEnd();
-
-
+    m_shaderPrograms["terrain"]->setUniformValue("planetTexture",GL_TEXTURE0);
+    m_shaderPrograms["terrain"]->setUniformValue("xDim",planet_sphere->m_para1);
+    m_shaderPrograms["terrain"]->setUniformValue("yDim",planet_sphere->m_para2);
+    m_shaderPrograms["terrain"]->setUniformValue("timer", elapsed);
     glPushMatrix();
-    //glTranslatef(-1.25f, 0.f, 0.f);
-//    glCallList(m_dragon.idx);
-
-    m_sphere->drawshape();
+    planet_sphere->drawshape();
     glPopMatrix();
     m_shaderPrograms["terrain"]->release();
-//    m_shaderPrograms["refract"]->release();
 
+    // create an orbiting sun around the planet
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D,m_t2);
+    glPushMatrix();
+    glScalef(.25,.25,.25);
+    glRotatef(elapsed,0,1,0);
+    glTranslatef(20,0,0);
+    sun_sphere->drawshape();
+    glPopMatrix();
+    glDisable(GL_TEXTURE_2D);
 
-//    glEnable(GL_TEXTURE_CUBE_MAP);
-//    // Render the dragon with the reflection shader bound
-//    m_shaderPrograms["reflect"]->bind();
-//    m_shaderPrograms["reflect"]->setUniformValue("CubeMap", GL_TEXTURE0);
-//    glPushMatrix();
-//    glTranslatef(1.25f,0.f,0.f);
-//    glCallList(m_dragon.idx);
-//    glPopMatrix();
-//    m_shaderPrograms["reflect"]->release();
+    // set blend to enable slightly transparent water
+    glEnable (GL_BLEND);
+    glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);  
+
+    // add water to the planet surface
+    glEnable(GL_TEXTURE_CUBE_MAP);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, m_cubeMap);
+    glPushMatrix();
+    m_shaderPrograms["reflect"]->bind();
+    m_shaderPrograms["reflect"]->setUniformValue("CubeMap", GL_TEXTURE0);
+    m_shaderPrograms["reflect"]->setUniformValue("timer", elapsed);
+    glScalef(.95,.95,.95);
+    water_sphere->drawshape();
+    glPopMatrix();
+    m_shaderPrograms["reflect"]->release();
+    glDisable(GL_TEXTURE_CUBE_MAP);
+    glDisable(GL_BLEND);
+
+    // cloud effect
+    glEnable(GL_CULL_FACE);
+    glEnable(GL_TEXTURE_2D);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D,m_t3);
+    m_shaderPrograms["clouds"]->bind();
+    m_shaderPrograms["clouds"]->setUniformValue("cloudTexture",GL_TEXTURE0);
+    glPushMatrix();
+    glRotatef((-elapsed),0,1,0);
+    glEnable (GL_BLEND);
+    glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glScalef(1.1,1.1,1.1);
+    cloud_sphere->drawshape();
+    glPopMatrix();
+    m_shaderPrograms["clouds"]->release();
 
     // Disable culling, depth testing and cube maps
+    glDisable(GL_BLEND);
     glActiveTexture(GL_TEXTURE0);
     glDisable(GL_CULL_FACE);
     glDisable(GL_DEPTH_TEST);
-//    glBindTexture(GL_TEXTURE_2D,0);
-//    glDisable(GL_TEXTURE_2D);
-//    glBindTexture(GL_TEXTURE_CUBE_MAP,0);
-//    glDisable(GL_TEXTURE_CUBE_MAP);
-}
-
-/**
-  Run a gaussian blur on the texture stored in fbo 2 and
-  put the result in fbo 1.  The blur should have a radius of 2.
-
-  @param width: the viewport width
-  @param height: the viewport height
-**/
-void GLWidget::renderBlur(int width, int height)
-{
-    int radius = 2;
-    int dim = radius * 2 + 1;
-    GLfloat kernel[dim * dim];
-    GLfloat offsets[dim * dim * 2];
-    createBlurKernel(radius, width, height, &kernel[0], &offsets[0]);
-    // TODO: Finish filling this in
-
-    m_framebufferObjects["fbo_1"]->bind();
-    m_shaderPrograms["blur"]->bind();
-    m_shaderPrograms["blur"]->setUniformValueArray("offsets",offsets, dim*dim, 2);
-    m_shaderPrograms["blur"]->setUniformValueArray("kernel", kernel, dim*dim*2, 1);
-    m_shaderPrograms["blur"]->setUniformValue("arraySize", dim*dim);
-
-    glBindTexture(GL_TEXTURE_2D, m_framebufferObjects["fbo_2"]->texture());
-    renderTexturedQuad(width, height, false);
-    m_shaderPrograms["blur"]->release();
-    glBindTexture(GL_TEXTURE_2D, 0);
-    m_framebufferObjects["fbo_1"]->release();
-
 }
 
 /**

@@ -152,7 +152,7 @@ void sphere::drawshape(){
         glBegin(GL_TRIANGLES);
         glNormal3f(2*m_coordinates[i*3][0],2*m_coordinates[i*3][1],2* m_coordinates[3*i][2]);
 
-        if(m_textures[i*3][0]<0.01){
+        if(m_textures[i*3][0]<0.004){
             m_textures[i*3][0] =1 -m_textures[i*3][0];
         }
         glTexCoord2f(m_textures[i*3][0],m_textures[i*3][1]);
@@ -165,7 +165,7 @@ void sphere::drawshape(){
         glVertex3f(m_coordinates[i*3][0],m_coordinates[i*3][1], m_coordinates[3*i][2]);
         glNormal3f(2*m_coordinates[i*3+1][0],2*m_coordinates[i*3+1][1],2* m_coordinates[3*i+1][2]);
 
-        if(m_textures[i*3+1][0]<0.01){
+        if(m_textures[i*3+1][0]<0.004){
             m_textures[i*3+1][0] =1 -m_textures[i*3+1][0];
         }
         glTexCoord2f(m_textures[i*3+1][0],m_textures[i*3+1][1]);
@@ -181,7 +181,7 @@ void sphere::drawshape(){
 
 //       std::cout<<"ha"<<std::endl;
 
-        if(m_textures[i*3+2][0]<0.01){
+        if(m_textures[i*3+2][0]<0.004){
             m_textures[i*3+2][0] =1 -m_textures[i*3+2][0];
         }
         glTexCoord2f(m_textures[i*3+2][0],m_textures[i*3+2][1]);

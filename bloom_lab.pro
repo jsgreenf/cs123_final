@@ -1,8 +1,8 @@
-QT += core gui opengl
-
+QT += core \
+    gui \
+    opengl
 TARGET = bloom_lab
 TEMPLATE = app
-
 INCLUDEPATH += lab \
     lib \
     math \
@@ -13,7 +13,6 @@ DEPENDPATH += lab \
     math \
     shape \
     support
-
 HEADERS += lab/glwidget.h \
     lib/targa.h \
     lib/glm.h \
@@ -25,9 +24,7 @@ HEADERS += lab/glwidget.h \
     shape/sphere.h \
     shape/shape.h \
     lib/CS123Common.h
-
-SOURCES += \
-    lab/glwidget.cpp \
+SOURCES += lab/glwidget.cpp \
     lib/targa.cpp \
     lib/glm.cpp \
     support/resourceloader.cpp \
@@ -36,19 +33,12 @@ SOURCES += \
     shape/sphere.cpp \
     support/camera.cpp \
     shape/shape.cpp
-
 FORMS += mainwindow.ui \
     support/mainwindow.ui
-
-OTHER_FILES += \
-    shaders/refract.vert \
-    shaders/refract.frag \
-    shaders/reflect.vert \
+OTHER_FILES += shaders/reflect.vert \
     shaders/reflect.frag \
-    shaders/brightpass.frag \
-    shaders/blur.frag \
     shaders/terrain.frag \
     shaders/terrain.vars \
-    shaders/terrain.vert
-
-RESOURCES +=
+    shaders/terrain.vert \
+    shaders/clouds.frag
+RESOURCES += 

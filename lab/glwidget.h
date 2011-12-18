@@ -44,7 +44,6 @@ protected:
     void applyOrthogonalCamera(float width, float height);
     void applyPerspectiveCamera(float width, float height);
     void renderTexturedQuad(int width, int height, bool flip);
-    void renderBlur(int width, int height);
     void renderScene();
     void paintText();
 
@@ -55,11 +54,10 @@ private:
     float m_prevFps, m_fps;
     Vector2 m_prevMousePos;
     OrbitCamera m_camera;
-    sphere* m_sphere;
+    sphere *planet_sphere, *cloud_sphere, *water_sphere, *sun_sphere;
     // Resources
     QHash<QString, QGLShaderProgram *> m_shaderPrograms; // hash map of all shader programs
     QHash<QString, QGLFramebufferObject *> m_framebufferObjects; // hash map of all framebuffer objects
-    Model m_dragon; // dragon model
     GLuint m_skybox; // skybox call list ID
     GLuint m_cubeMap; // cubeMap texture ID
     GLuint m_t1;
