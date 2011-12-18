@@ -4,6 +4,7 @@ uniform sampler2D planetTexture;
 uniform int xDim;
 uniform int yDim;
 uniform float timer;
+uniform int terrain_smoothing;
 
 const float M_PI = 3.14159265;
 
@@ -43,9 +44,9 @@ void main()
     gl_TexCoord[0] = gl_MultiTexCoord0;    
 
     // take a blur of the surrounding terrain to determine the overall intensity and elevation
-    float grayScale = pow(blurIntensity(planetTexture, 2)-.5,3);
+    float grayScale = pow(blurIntensity(planetTexture, terrain_smoothing)-.5,3);
 
-    // set new height of the vertex based on the topology
+    // set new height of the vertex based on the topography
     gl_Vertex.xyz = gl_Vertex.xyz+(gl_Vertex.xyz*(grayScale)*5);
 
     gl_Position = ftransform();

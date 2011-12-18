@@ -9,6 +9,7 @@
 #include <QTimer>
 #include <QWheelEvent>
 #include "glm.h"
+#include "ui_mainwindow.h"
 
 using std::cout;
 using std::endl;
@@ -35,10 +36,14 @@ GLWidget::GLWidget(QWidget *parent) : QGLWidget(parent),
     m_camera.zoom = 3.5f;
     m_camera.theta = M_PI * 1.5f, m_camera.phi = 0.2f;
     m_camera.fovy = 60.f;
-    planet_sphere = new sphere(300,300,false);
-    water_sphere = new sphere(200,200,false);
-    cloud_sphere = new sphere(200,200,false);
-    sun_sphere = new sphere(50,50,false);
+    planet_sphere = new Sphere(250,250);
+    water_sphere = new Sphere(100,100);
+    cloud_sphere = new Sphere(100,100);
+    sun_sphere = new Sphere(50,50);
+    m_cone = new cone(10,10,false);
+    terrain_index = 0;
+    m_clouds = true;
+    terrain_smoothing = 1;
     connect(&m_timer, SIGNAL(timeout()), this, SLOT(update()));
 }
 
@@ -57,6 +62,18 @@ GLWidget::~GLWidget()
     delete water_sphere;
     delete cloud_sphere;
     delete sun_sphere;
+    delete m_cone;
+
+    // delete textures
+    for (int i = 0; i < m_terrains.size(); i++){
+        glDeleteTextures(1,&(m_terrains[i]));
+    }
+    glDeleteTextures(1,&m_t2);
+    glDeleteTextures(1,&m_t3);
+    glDeleteTextures(1,&m_t4);
+    glDeleteTextures(1,&m_t5);
+    glDeleteTextures(1,&m_t6);
+
 }
 
 /**
@@ -117,12 +134,6 @@ void GLWidget::initializeResources()
 void GLWidget::loadCubeMap()
 {
     QList<QFile *> fileList;
-//    fileList.append(new QFile("../cs123_final/textures/astra/posx.jpg"));
-//    fileList.append(new QFile("../cs123_final/textures/astra/negx.jpg"));
-//    fileList.append(new QFile("../cs123_final/textures/astra/posy.jpg"));
-//    fileList.append(new QFile("../cs123_final/textures/astra/negy.jpg"));
-//    fileList.append(new QFile("../cs123_final/textures/astra/posz.jpg"));
-//    fileList.append(new QFile("../cs123_final/textures/astra/negz.jpg"));
 
     fileList.append(new QFile("../cs123_final/textures/nebula/PN_right1.png"));
     fileList.append(new QFile("../cs123_final/textures/nebula/PN_left2.png"));
@@ -133,10 +144,27 @@ void GLWidget::loadCubeMap()
 
     m_cubeMap = ResourceLoader::loadCubeMap(fileList);
 
-    m_t1 = ResourceLoader::loadtexture2D(new QFile("../cs123_final/textures/planet_Klendathu.png"));
+    // load all different planet terrains
+    m_terrains.append(ResourceLoader::loadtexture2D(new QFile("../cs123_final/textures/planet_Klendathu.png")));
+    m_terrains.append(ResourceLoader::loadtexture2D(new QFile("../cs123_final/textures/planet_Telos.png")));
+    m_terrains.append(ResourceLoader::loadtexture2D(new QFile("../cs123_final/textures/planet_Trantor.png")));
+    m_terrains.append(ResourceLoader::loadtexture2D(new QFile("../cs123_final/textures/planet_DamBaDa.png")));
+    m_terrains.append(ResourceLoader::loadtexture2D(new QFile("../cs123_final/textures/planet_Arnessk.png")));
+    m_terrains.append(ResourceLoader::loadtexture2D(new QFile("../cs123_final/textures/planet_Bog.png")));
+    m_terrains.append(ResourceLoader::loadtexture2D(new QFile("../cs123_final/textures/planet_serendip.jpg")));
+    m_terrains.append(ResourceLoader::loadtexture2D(new QFile("../cs123_final/textures/planet_Mars.png")));
+    m_terrains.append(ResourceLoader::loadtexture2D(new QFile("../cs123_final/textures/planet_Reststop.png")));
+    m_terrains.append(ResourceLoader::loadtexture2D(new QFile("../cs123_final/textures/planet_Terminus.png")));
+    m_terrains.append(ResourceLoader::loadtexture2D(new QFile("../cs123_final/textures/planet_Jinx.png")));
+    m_terrains.append(ResourceLoader::loadtexture2D(new QFile("../cs123_final/textures/planet_Trask.png")));
+    m_terrains.append(ResourceLoader::loadtexture2D(new QFile("../cs123_final/textures/planet_Alba.png")));
+
+    //m_t1 = ResourceLoader::loadtexture2D(new QFile("../cs123_final/textures/planet_Klendathu.png")));
     m_t2 = ResourceLoader::loadtexture2D(new QFile("../cs123_final/textures/gstar-original.jpg"));
     m_t3 = ResourceLoader::loadtexture2D(new QFile("../cs123_final/textures/clouds.jpg"));
-    //m_t4 = ResourceLoader::loadtexture2D(new QFile("/course/cs123/data/image/terrain/snow.JPG"));
+    m_t4 = ResourceLoader::loadtexture2D(new QFile("../cs123_final/textures/green.jpg"));
+    m_t5 = ResourceLoader::loadtexture2D(new QFile("../cs123_final/textures/leave.jpg"));
+    m_t6 = ResourceLoader::loadtexture2D(new QFile("../cs123_final/textures/tree.jpg"));
 
 }
 
@@ -266,15 +294,33 @@ void GLWidget::renderScene() {
     glEnable(GL_TEXTURE_2D);
     m_shaderPrograms["terrain"]->bind();
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D,m_t1);
+    glBindTexture(GL_TEXTURE_2D,m_terrains[terrain_index]);
     m_shaderPrograms["terrain"]->setUniformValue("planetTexture",GL_TEXTURE0);
-    m_shaderPrograms["terrain"]->setUniformValue("xDim",planet_sphere->m_para1);
-    m_shaderPrograms["terrain"]->setUniformValue("yDim",planet_sphere->m_para2);
+    m_shaderPrograms["terrain"]->setUniformValue("xDim",planet_sphere->stacks);
+    m_shaderPrograms["terrain"]->setUniformValue("yDim",planet_sphere->slices);
     m_shaderPrograms["terrain"]->setUniformValue("timer", elapsed);
+    m_shaderPrograms["terrain"]->setUniformValue("terrain_smoothing", terrain_smoothing);
     glPushMatrix();
-    planet_sphere->drawshape();
+    planet_sphere->drawTriangles();
     glPopMatrix();
     m_shaderPrograms["terrain"]->release();
+
+    // Render an interior chamber to the planet
+    glEnable(GL_TEXTURE_2D);  
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D,m_t4);
+    glPushMatrix();
+    glScalef(.65,.65,.65);
+    glCullFace(GL_FRONT);
+    planet_sphere->drawTriangles();
+    glPopMatrix();
+    glCullFace(GL_BACK);
+
+    // draw the tree
+    glPushMatrix();
+    glScalef(.012,.012,.012);
+    drawtree(Vector3(0,-12,0), 5, 10, 20, .6, .8);
+    glPopMatrix();
 
     // create an orbiting sun around the planet
     glActiveTexture(GL_TEXTURE0);
@@ -283,7 +329,7 @@ void GLWidget::renderScene() {
     glScalef(.25,.25,.25);
     glRotatef(elapsed,0,1,0);
     glTranslatef(20,0,0);
-    sun_sphere->drawshape();
+    sun_sphere->drawTriangles();
     glPopMatrix();
     glDisable(GL_TEXTURE_2D);
 
@@ -299,7 +345,7 @@ void GLWidget::renderScene() {
     m_shaderPrograms["reflect"]->setUniformValue("CubeMap", GL_TEXTURE0);
     m_shaderPrograms["reflect"]->setUniformValue("timer", elapsed);
     glScalef(.95,.95,.95);
-    water_sphere->drawshape();
+    water_sphere->drawTriangles();
     glPopMatrix();
     m_shaderPrograms["reflect"]->release();
     glDisable(GL_TEXTURE_CUBE_MAP);
@@ -317,12 +363,17 @@ void GLWidget::renderScene() {
     glEnable (GL_BLEND);
     glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glScalef(1.1,1.1,1.1);
-    cloud_sphere->drawshape();
+    if (m_clouds){
+        glCullFace(GL_FRONT);
+        cloud_sphere->drawTriangles();
+        glCullFace(GL_BACK);
+        cloud_sphere->drawTriangles();
+    }
     glPopMatrix();
     m_shaderPrograms["clouds"]->release();
+    glDisable(GL_BLEND);
 
     // Disable culling, depth testing and cube maps
-    glDisable(GL_BLEND);
     glActiveTexture(GL_TEXTURE0);
     glDisable(GL_CULL_FACE);
     glDisable(GL_DEPTH_TEST);
@@ -388,7 +439,7 @@ void GLWidget::resizeGL(int width, int height)
   @param h: the height of the quad to draw
   @param flip: flip the texture vertically
 **/
-void GLWidget::renderTexturedQuad(int width, int height, bool flip) {
+void GLWidget::renderTexturedQuad(float width, float height, bool flip) {
     // Clamp value to edge of texture when texture index is out of bounds
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
@@ -407,55 +458,34 @@ void GLWidget::renderTexturedQuad(int width, int height, bool flip) {
 }
 
 /**
-  Creates a gaussian blur kernel with the specified radius.  The kernel values
-  and offsets are stored.
-
-  @param radius: The radius of the kernel to create.
-  @param width: The width of the image.
-  @param height: The height of the image.
-  @param kernel: The array to write the kernel values to.
-  @param offsets: The array to write the offset values to.
-**/
-void GLWidget::createBlurKernel(int radius, int width, int height,
-                                                    GLfloat* kernel, GLfloat* offsets)
-{
-    int size = radius * 2 + 1;
-    float sigma = radius / 3.0f;
-    float twoSigmaSigma = 2.0f * sigma * sigma;
-    float rootSigma = sqrt(twoSigmaSigma * M_PI);
-    float total = 0.0f;
-    float xOff = 1.0f / width, yOff = 1.0f / height;
-    int offsetIndex = 0;
-    for (int y = -radius, idx = 0; y <= radius; ++y)
-    {
-        for (int x = -radius; x <= radius; ++x,++idx)
-        {
-            float d = x * x + y * y;
-            kernel[idx] = exp(-d / twoSigmaSigma) / rootSigma;
-            total += kernel[idx];
-            offsets[offsetIndex++] = x * xOff;
-            offsets[offsetIndex++] = y * yOff;
-        }
-    }
-    for (int i = 0; i < size * size; ++i)
-    {
-        kernel[i] /= total;
-    }
-}
-
-/**
   Handles any key press from the keyboard
  **/
 void GLWidget::keyPressEvent(QKeyEvent *event)
 {
     switch(event->key())
     {
-        case Qt::Key_S:
+    case Qt::Key_S:{
         QImage qi = grabFrameBuffer(false);
         QString filter;
         QString fileName = QFileDialog::getSaveFileName(this, tr("Save Image"), "", tr("PNG Image (*.png)"), &filter);
         qi.save(QFileInfo(fileName).absoluteDir().absolutePath() + "/" + QFileInfo(fileName).baseName() + ".png", "PNG", 100);
         break;
+    }
+        case Qt::Key_Right: // right press increments terrain index
+            terrain_index = (terrain_index + 1) % m_terrains.size();
+        break;
+        case Qt::Key_Left: // left press decrements terrain index
+            if (terrain_index > 0) terrain_index = (terrain_index - 1);
+            else terrain_index = m_terrains.size()-1;
+        break;
+        case Qt::Key_C: // c-key toggles cloud cover
+            m_clouds = !m_clouds;
+        break;
+        case Qt::Key_Down: // up press increments terrain smoothing
+            terrain_smoothing++;
+        break;
+        case Qt::Key_Up: // down press decrements terrain smoothing
+            terrain_smoothing = max(0, (terrain_smoothing-1));
     }
 }
 
@@ -476,4 +506,76 @@ void GLWidget::paintText()
     // QGLWidget's renderText takes xy coordinates, a string, and a font
     renderText(10, 20, "FPS: " + QString::number((int) (m_prevFps)), m_font);
     renderText(10, 35, "S: Save screenshot", m_font);
+    renderText(10, 50, "Left / Right: Switch terrain", m_font);
+    renderText(10, 65, "Up / Down: Terrain severity", m_font);
+    renderText(10, 80, "C: Toggle clouds", m_font);
+
+}
+
+// fractally generated tree/fern/branch
+void GLWidget::drawtree(Vector3 start, int depth, double angle, double length, double x,double z){
+
+    Vector3 trans1,trans2,trans3,trans4;
+    srand((unsigned)time(0));
+    if (depth >0){
+        double scoef = sin(angle*M_PI/180);
+        double ccoef = cos(angle*M_PI/180);
+
+        // make branches
+        glPushMatrix();
+        trans3 = Vector3(start.x - sqrt(scoef*length)*z,start.y+ccoef*length/2.0,start.z +sqrt(scoef*length)*x);
+        trans2 = Vector3(start.x - sqrt(scoef*length)*z*1.2,start.y+ccoef*length/2.0*1.2,start.z +sqrt(scoef*length)*x*1.2);
+        trans1 = Vector3(start.x - sqrt(scoef*length)*z*0.5,start.y+ccoef*length/2.0 *0.5,start.z + sqrt(scoef*length)*x*0.5);
+        trans4 = Vector3(start.x - sqrt(scoef*length)*z*1.6,start.y+ccoef*length/2.0 *1.6,start.z + sqrt(scoef*length)*x*1.6);
+        glEnable(GL_TEXTURE_2D);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D,m_t6);
+        glTranslatef(trans3.x,trans3.y,trans3.z);
+        glRotatef(angle,x,0,z);
+        glScalef(pow(1.4,depth)/5,length,pow(1.4,depth)/5);
+        glColor3f(0.5,0.5,0.4);
+        m_cone->drawshape();
+        glColor3f(1,1,1);
+        glPopMatrix();
+        glBindTexture(GL_TEXTURE_2D,0);
+
+        // make leaves
+        glEnable(GL_CULL_FACE);
+        if (depth == 1){
+            glColor3f(0.3,0.6,0.3);
+            glEnable(GL_TEXTURE_2D);
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D,m_t5);
+            glPushMatrix();
+            glTranslatef(trans2.x,trans2.y,trans2.z);
+            glRotatef(angle,x,0,z);
+            renderTexturedQuad(0.8,0.8,true);
+            glRotatef(180,1,0,0);
+            renderTexturedQuad(0.8,0.8,true);
+            glPopMatrix();
+            glPushMatrix();
+            glTranslatef(trans3.x,trans3.y,trans3.z);
+            glRotatef(angle,x,0,z);
+            glRotatef(90,1,0,1);
+            renderTexturedQuad(0.8,0.8,true);
+            glRotatef(180,1,0,0);
+            renderTexturedQuad(0.8,0.8,true);
+            glPopMatrix();
+            glPushMatrix();
+            glTranslatef(trans4.x,trans4.y,trans4.z);
+            glRotatef(angle,x,0,z);
+            glRotatef(90,1,0,1);
+            renderTexturedQuad(0.8,0.8,true);
+            glRotatef(180,1,0,0);
+            renderTexturedQuad(0.8,0.8,true);
+            glPopMatrix();
+            glBindTexture(GL_TEXTURE_2D,0);
+            glColor3f(1,1,1);
+        }
+
+        drawtree(trans1,depth-1,angle+15,length*2/3,0.7,-sqrt(1-0.7*0.7));
+        drawtree(trans2,depth-1,angle+25,length*2/3,-0.9,-sqrt(1-0.9*0.9));
+        drawtree(trans3,depth-1,angle+20,length*2/3,0.2,sqrt(1-0.2*0.2));
+
+    }
 }

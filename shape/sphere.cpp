@@ -1,233 +1,193 @@
 #include "sphere.h"
 
-#include "shape.h"
-#include <stdio.h>
+#define _USE_MATH_DEFINES
+#include <vector.h>
 #include <math.h>
 #include <iostream>
 
-#include <qgl.h>
-
-#define PI 3.141592654
-
-
-sphere::sphere(int para1,int para2,bool drawNormals):shape(para1,para2,drawNormals)
+Sphere::Sphere(int numStacks, int numSlices)
 {
-    int size = 6*m_para2*(m_para1 -1);
-         m_coordinates = new double[size][4];
-         m_textures = new double[size][2];
-         makearray();
+
+    stacks = numStacks;
+    slices = numSlices;
+
+    surface = new QList<Vector3*>();
+    normals = new QList<Vector3*>();
+    textureCoords = new QList<Vector2*>();
+    topNormal = new Vector3(0,1,0);
+    baseNormal = new Vector3(0,-1,0);
+    topCenter = new Vector3(0,.5,0);
+    baseCenter = new Vector3(0,-.5,0);
+    generatePoints();
 }
 
+Sphere::~Sphere(){
 
-sphere::~sphere(){
-    delete[] m_coordinates;
+    for (int i=0; i<surface->size(); i++){
+        delete surface->at(i);
+    }
+    delete surface;
+
+    for (int i=0; i<normals->size(); i++){
+        delete normals->at(i);
+    }
+    delete normals;
+
+    for (int i=0; i<textureCoords->size(); i++){
+        delete textureCoords->at(i);
+    }
+    delete textureCoords;
+
+    delete topCenter;
+    delete baseCenter;
 
 }
 
-void sphere::makearray(){
-    if(m_para2 <3){
-        m_para2 = 3;
-    }
-    if(m_para1 <2){
-        m_para1 = 2;
-    }
-    int size = 6*m_para2*(m_para1 -1);
-    delete[] m_coordinates;
-    m_coordinates = new double[size][4];
+// uses the implicit equation for the shape to determine if a ray intersects it and at what point, also sets corresponding normal
+//float Sphere::intersectionPoint(Vector3 origin, Vector3 ray, Vector3 *normal, Vector2* texCoords){
+//
+//    // test for intersection with the sphere
+//    float a = pow(ray.x,2) + pow(ray.y,2) + pow(ray.z,2);
+//    float b = 2*((origin.x*ray.x) + (origin.y*ray.y) + (origin.z*ray.z));
+//    float c = pow(origin.x,2) + pow(origin.y,2) + pow(origin.z,2) - .25;
+//
+//    float t1,t2;
+//
+//    // use determinant to short-circuit the intersection test if there are no intersections
+//    float det = pow(b,2) - (4*a*c);
+//
+//    // if there is at least one intersection
+//    if (det >= 0){
+//
+//        t1 = (-b + sqrt(pow(b,2)-(4*a*c)))/(2*a);
+//        t2 = (-b - sqrt(pow(b,2)-(4*a*c)))/(2*a);
+//
+//    }
+//    else{
+//        return -1;
+//    }
+//
+//    // return the smallest t-value
+//    *normal = (ray*min(t1,t2)+origin); // assign corresponding normal
+//    normal->w = 0; // ensure that the normal is a vector
+//    *normal = normal->getNormalized();
+//
+//    // calculate texture coordinates
+//    if (normal->y == 1 || normal->y == -1){ // handle the singularity
+//        texCoords->x = .5;
+//    }
+//    else{
+//        Vector3 coords = Vector3(normal->x,0,normal->z);
+//        coords.normalize();
+//        texCoords->x = acos(coords.x);
+//        if (coords.z > 0) texCoords->x = 2*M_PI - texCoords->x;
+//        texCoords->x /= 2*M_PI;
+//    }
+//    texCoords->y = ((M_PI/2) - asin(normal->y))/M_PI;
+//
+//    return min(t1,t2);
+//}
 
-    //horizontal array stores all the theta value, while the vertical_array stores all the phi value.
+void Sphere::generatePoints(){
 
-    double horizontal_array[m_para2];
-    double theta = 0;
-    for (int i=0;i<m_para2+1;i++){
-        horizontal_array[i] = theta;
-        theta += 2*PI/m_para2;
+    //if (checkParameters(2,3)){
 
-    }
+        for (int i=0; i<surface->size(); i++){
+            delete surface->at(i);
+        }
+        surface->clear();
 
-    double vertical_array[m_para1-1];
-    double phi =0;
-    for (int i=0;i<m_para1-1;i++){
-        phi += PI/m_para1;
-        vertical_array[i] = phi;
-    }
-    if (m_para1 >2){
-        double inner_p1[4];
-        double inner_p2[4];
-        double outer_p1[4];
-        double outer_p2[4];
-        for (int i=0;i<m_para2;i++){
-
-            for(int j=0;j<m_para1-2;j++){
-
-
-                outer_p1[0] = 0.5* sin(vertical_array[j])*cos(horizontal_array[i]);
-                outer_p2[0] = 0.5* sin(vertical_array[j])*cos(horizontal_array[i+1]);
-                inner_p1[0] = 0.5* sin(vertical_array[j+1])*cos(horizontal_array[i]);
-                inner_p2[0] = 0.5* sin(vertical_array[j+1])*cos(horizontal_array[i+1]);
-                outer_p1[1] = 0.5*cos(vertical_array[j]);
-                outer_p2[1] = 0.5*cos(vertical_array[j]);
-                inner_p1[1] = 0.5*cos(vertical_array[j+1]);
-                inner_p2[1] = 0.5*cos(vertical_array[j+1]);
-                outer_p1[2] = 0.5* sin(vertical_array[j])*sin(horizontal_array[i]);
-                outer_p2[2] = 0.5* sin(vertical_array[j])*sin(horizontal_array[i+1]);
-                inner_p1[2] = 0.5* sin(vertical_array[j+1])*sin(horizontal_array[i]);
-                inner_p2[2] = 0.5* sin(vertical_array[j+1])*sin(horizontal_array[i+1]);
-                outer_p1[3] = 1.0;
-                outer_p2[3] = 1.0;
-                inner_p1[3] = 1.0;
-                inner_p2[3] = 1.0;
-                for (int k=0;k<4;k++){
-                    m_coordinates[i*6*(m_para1 -2)+6*j][k] = outer_p1[k];
-                    m_coordinates[i*6*(m_para1 -2)+6*j+1][k] = outer_p2[k];
-                    m_coordinates[i*6*(m_para1 -2)+6*j+2][k] = inner_p1[k];
-                    m_coordinates[i*6*(m_para1 -2)+6*j+3][k] = inner_p1[k];
-                    m_coordinates[i*6*(m_para1 -2)+6*j+4][k] = outer_p2[k];
-                    m_coordinates[i*6*(m_para1 -2)+6*j+5][k] = inner_p2[k];
-                }
-
-
+        for (int i = 0; i<(stacks-1); i++){
+            for (int j=0; j<slices; j++){
+                float theta = 2*M_PI*j/(float)slices;
+                float phi = M_PI*(i+1)/(float)stacks;
+                surface->append(new Vector3(.5*cos(theta)*sin(phi), .5*cos(phi), .5*sin(theta)*sin(phi))); //face points, dont forget to add center points
+                Vector3* normal = new Vector3(.5*cos(theta)*sin(phi), .5*cos(phi), .5*sin(theta)*sin(phi));
+                normal->normalize();
+                normals->append(normal);
+                textureCoords->append(new Vector2(float(j)/slices, float(i)/stacks));
             }
         }
-
-    }
-    for(int i=0;i<m_para2;i++){
-
-
-        m_coordinates[6*m_para2*(m_para1 -2)+6*i][0] = 0.0;
-        m_coordinates[6*m_para2*(m_para1 -2)+6*i+1][0] =0.5* sin(PI/m_para1)*cos(horizontal_array[i+1]);
-        m_coordinates[6*m_para2*(m_para1 -2)+6*i+2][0] =  0.5* sin(PI/m_para1)*cos(horizontal_array[i]);
-        m_coordinates[6*m_para2*(m_para1 -2)+6*i][1] = 0.5;
-        m_coordinates[6*m_para2*(m_para1 -2)+6*i+1][1] = 0.5*cos(PI/m_para1);
-        m_coordinates[6*m_para2*(m_para1 -2)+6*i+2][1] = 0.5*cos(PI/m_para1);
-        m_coordinates[6*m_para2*(m_para1 -2)+6*i][2] = 0.0;
-        m_coordinates[6*m_para2*(m_para1 -2)+6*i+1][2] = 0.5* sin(PI/m_para1)*sin(horizontal_array[i+1]);
-        m_coordinates[6*m_para2*(m_para1 -2)+6*i+2][2] = 0.5* sin(PI/m_para1)*sin(horizontal_array[i]);
-        m_coordinates[6*m_para2*(m_para1 -2)+6*i+3][0] = 0.0;
-        m_coordinates[6*m_para2*(m_para1 -2)+6*i+4][0] = 0.5* sin(PI -(PI/m_para1))*cos(horizontal_array[i]);
-        m_coordinates[6*m_para2*(m_para1 -2)+6*i+5][0] = 0.5* sin(PI -(PI/m_para1))*cos(horizontal_array[i+1]);
-        m_coordinates[6*m_para2*(m_para1 -2)+6*i+3][1] = -0.5;
-        m_coordinates[6*m_para2*(m_para1 -2)+6*i+4][1] = 0.5*cos(PI -(PI/m_para1));
-        m_coordinates[6*m_para2*(m_para1 -2)+6*i+5][1] = 0.5*cos(PI -(PI/m_para1));
-        m_coordinates[6*m_para2*(m_para1 -2)+6*i+3][2] = 0.0;
-        m_coordinates[6*m_para2*(m_para1 -2)+6*i+4][2] = 0.5* sin(PI -(PI/m_para1))*sin(horizontal_array[i]);
-        m_coordinates[6*m_para2*(m_para1 -2)+6*i+5][2] = 0.5* sin(PI -(PI/m_para1))*sin(horizontal_array[i+1]);
-
-
-    }
-    for(int i =0;i<2*m_para2*(m_para1 -1);i++){
-        Vector2 a = get_texture(Vector3 (m_coordinates[i*3][0],m_coordinates[i*3][1],m_coordinates[i*3][2]));
-        m_textures[i*3][0] = a.x;
-        m_textures[i*3][1] = a.y;
-        a = get_texture(Vector3 (m_coordinates[i*3+1][0],m_coordinates[i*3+1][1],m_coordinates[i*3+1][2]));
-        m_textures[i*3+1][0] = a.x;
-        m_textures[i*3+1][1] = a.y;
-        a = get_texture(Vector3 (m_coordinates[i*3+2][0],m_coordinates[i*3+2][1],m_coordinates[i*3+2][2]));
-        m_textures[i*3+2][0] = a.x;
-        m_textures[i*3+2][1] = a.y;
-    }
-
-
+    //}
 }
-void sphere::drawshape(){
 
-    for(int i =0;i<2*m_para2*(m_para1 -3);i++){
-        glBegin(GL_TRIANGLES);
-        glNormal3f(2*m_coordinates[i*3][0],2*m_coordinates[i*3][1],2* m_coordinates[3*i][2]);
-
-        glTexCoord2f(m_textures[i*3][0],m_textures[i*3][1]);
-        glVertex3f(m_coordinates[i*3][0],m_coordinates[i*3][1], m_coordinates[3*i][2]);
-        glNormal3f(2*m_coordinates[i*3+1][0],2*m_coordinates[i*3+1][1],2* m_coordinates[3*i+1][2]);
-
-        glTexCoord2f(m_textures[i*3+1][0],m_textures[i*3+1][1]);
-        glVertex3f(m_coordinates[3*i+1][0],m_coordinates[3*i+1][1], m_coordinates[3*i+1][2]);
-        glNormal3f(2*m_coordinates[i*3+2][0],2*m_coordinates[i*3+2][1],2* m_coordinates[3*i+2][2]);
-
-        glTexCoord2f(m_textures[i*3+2][0],m_textures[i*3+2][1]);
-        glVertex3f(m_coordinates[3*i+2][0],m_coordinates[3*i+2][1], m_coordinates[3*i+2][2]);
-
-        glEnd();
-    }
-    for(int i =2*m_para2*(m_para1 -3);i<2*m_para2*(m_para1 -1);i++){
-        glBegin(GL_TRIANGLES);
-        glNormal3f(2*m_coordinates[i*3][0],2*m_coordinates[i*3][1],2* m_coordinates[3*i][2]);
-
-        if(m_textures[i*3][0]<0.004){
-            m_textures[i*3][0] =1 -m_textures[i*3][0];
-        }
-        glTexCoord2f(m_textures[i*3][0],m_textures[i*3][1]);
-
-
-//        std::cout<<a.x<<std::endl;
-
-
-
-        glVertex3f(m_coordinates[i*3][0],m_coordinates[i*3][1], m_coordinates[3*i][2]);
-        glNormal3f(2*m_coordinates[i*3+1][0],2*m_coordinates[i*3+1][1],2* m_coordinates[3*i+1][2]);
-
-        if(m_textures[i*3+1][0]<0.004){
-            m_textures[i*3+1][0] =1 -m_textures[i*3+1][0];
-        }
-        glTexCoord2f(m_textures[i*3+1][0],m_textures[i*3+1][1]);
-
-//        std::cout<<a.x<<std::endl;
-
-
-
-        glVertex3f(m_coordinates[3*i+1][0],m_coordinates[3*i+1][1], m_coordinates[3*i+1][2]);
-        glNormal3f(2*m_coordinates[i*3+2][0],2*m_coordinates[i*3+2][1],2* m_coordinates[3*i+2][2]);
-
-//        std::cout<<a.x<<std::endl;
-
-//       std::cout<<"ha"<<std::endl;
-
-        if(m_textures[i*3+2][0]<0.004){
-            m_textures[i*3+2][0] =1 -m_textures[i*3+2][0];
-        }
-        glTexCoord2f(m_textures[i*3+2][0],m_textures[i*3+2][1]);
-        glVertex3f(m_coordinates[3*i+2][0],m_coordinates[3*i+2][1], m_coordinates[3*i+2][2]);
-
-        glEnd();
-    }
-
-
-
-}
-Vector2 sphere::get_texture(Vector3 p_ins){
-    double u,v;
-    if((p_ins.y >= 0.5 -EPSILON)&&(p_ins.y<=0.5+EPSILON)){
-
-        return Vector2(0.5, 0);
-    }
-    else if((p_ins.y <= -0.5+EPSILON)&&(p_ins.y>= -0.5-EPSILON)){
-
-        return Vector2(0.5 ,1);
-    }
-    else{
-
-        double theta;
-        double fy;
-
-        theta = atan2(p_ins.z,p_ins.x);
-        fy = asin(p_ins.y/0.5);
-        v = 0.5 - (fy/M_PI);
-        if (theta <0){
-
-            u = (-theta)/(2*M_PI);
-
-
-        }
-        else{
-
-            u = 1- (theta/(2*M_PI));
-
-
-        }
-
-
-
-        return Vector2(u,v);
-    }
+void Sphere::drawNormals(){
 
 }
 
+void Sphere::drawTriangles(){
+
+    // make sure points to be drawn exist
+    //generatePoints();
+
+    glBegin(GL_TRIANGLES);
+
+    // generate the triangles of the surface of the sphere
+    for (int col=0; col<slices; col++){
+        for (int row = 0; row<stacks-1; row++){
+
+            int index1 = row*(slices) + col;
+            int index2 = row*(slices) + ((col+1)%(int)slices);
+            int index3 = (row+1)*(slices) + ((col+1)%(int)slices);
+            int index4 = (row+1)*(slices) + col;
+
+            // DRAW SURFACE
+
+            // form first triangle
+            glTexCoord2fv(textureCoords->at(index1)->xy);
+            glNormal3fv(normals->at(index1)->xyz);
+            glVertex3f(surface->at(index1)->x, surface->at(index1)->y, surface->at(index1)->z);
+
+            if (index2 == row*slices) glTexCoord2f(1, textureCoords->at(index2)->y);
+            else glTexCoord2fv(textureCoords->at(index2)->xy);
+            glNormal3fv(normals->at(index2)->xyz);
+            glVertex3f(surface->at(index2)->x, surface->at(index2)->y, surface->at(index2)->z);
+
+            // unless connecting to the bottom tip, form both triangles
+            if (row < (stacks-2)){
+                // finish first triangle
+                if (index3 == (row+1)*slices) glTexCoord2f(1, textureCoords->at(index3)->y);
+                else glTexCoord2fv(textureCoords->at(index3)->xy);
+                glNormal3fv(normals->at(index3)->xyz);
+                glVertex3f(surface->at(index3)->x, surface->at(index3)->y, surface->at(index3)->z);
+
+                // form second triangle
+                glTexCoord2fv(textureCoords->at(index1)->xy);
+                glNormal3fv(normals->at(index1)->xyz);
+                glVertex3f(surface->at(index1)->x, surface->at(index1)->y, surface->at(index1)->z);
+                if (index3 == (row+1)*slices) glTexCoord2f(1, textureCoords->at(index3)->y);
+                else glTexCoord2fv(textureCoords->at(index3)->xy);
+                glNormal3fv(normals->at(index3)->xyz);
+                glVertex3f(surface->at(index3)->x, surface->at(index3)->y, surface->at(index3)->z);
+                glTexCoord2fv(textureCoords->at(index4)->xy);
+                glNormal3fv(normals->at(index4)->xyz);
+                glVertex3f(surface->at(index4)->x, surface->at(index4)->y, surface->at(index4)->z);
+            }
+            else{
+                // connect to the base center
+                glTexCoord2f(float(col+.5)/slices, 1);
+                glNormal3fv(baseNormal->xyz);
+                glVertex3f(baseCenter->x, baseCenter->y, baseCenter->z);
+            }
+
+            // form top triangles
+            if (row == 0){
+
+                if (index2 == row*slices) glTexCoord2f(1, textureCoords->at(index2)->y);
+                else glTexCoord2fv(textureCoords->at(index2)->xy);
+                glNormal3fv(normals->at(index2)->xyz);
+                glVertex3f(surface->at(index2)->x, surface->at(index2)->y, surface->at(index2)->z);
+                glTexCoord2fv(textureCoords->at(index1)->xy);
+                glNormal3fv(normals->at(index1)->xyz);
+                glVertex3f(surface->at(index1)->x, surface->at(index1)->y, surface->at(index1)->z);
+                glTexCoord2f(float(col+.5)/slices, 0);
+                glNormal3fv(topNormal->xyz);
+                glVertex3f(topCenter->x, topCenter->y, topCenter->z);
+            }
+
+        }
+    }
+
+    glEnd();
+
+}

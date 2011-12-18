@@ -1,34 +1,40 @@
 #ifndef SHAPE_H
 #define SHAPE_H
+
+#include <QList>
 #include "vector.h"
-#include <CS123Common.h>
+#include <math.h>
+#include <qgl.h>
 
-
-class shape
+class Shape
 {
 public:
-    shape(int para1,int para2,bool drawNormals);
+    Shape();
+    virtual ~Shape();
 
-    virtual ~shape();
+    // generates the points that make up a certain shape
+    virtual void generatePoints() = 0;
 
-    void setpara1(int para1);
+    // generates the normals for the shape's points
+    virtual void drawNormals() = 0;
 
-    virtual void setpara2(int para2);
+    // draws the shape's triangle tesselation to the screen using openGL
+    virtual void drawTriangles() = 0;
 
-    virtual void drawshape() = 0;
-    int m_para1;
-    int m_para2;
-    double (*m_coordinates)[4]; //array to store points data
-    double (*m_textures)[2]; //array to store the textures
+    // uses the implicit equation for the shape to determine if a ray intersects it and at what point, also sets corresponding normal
+    //virtual float intersectionPoint(Vector3 origin, Vector3 ray, Vector3 *normal, Vector2* texCoords) = 0;
+
+    int stacks;
+    int slices;
 
 protected:
-    virtual void makearray() = 0;
+
+    float param3;
+    //bool checkParameters(int p1 = 1, int p2 = 1, float p3 = 1);
+
+private:
 
 
-
-
-
-    bool m_drawNormals;
 
 };
 

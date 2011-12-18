@@ -1,0 +1,25 @@
+##########################################
+#       CS123 Final Project README       #
+##########################################
+
+Wenzheng Chi
+Jeremy Greenfield
+Reese Kuppig
+
+Project features:
+ - Terrain mapped planet utilizes a vertex shader to alter surface topography. Regions of higher intensity in the texture are mapped to higher elevations on the planet.
+ - Water on planet utilizes a reflective shader and alpha blending transparency
+ - Orbiting sun casts specular highlights on water surface and diffuse highlights on planet surface 
+ - Rotating clouds utilizes blending and transparency using shader
+ - Procedurally generated fractal tree (Lindenmayer system) is hidden inside planet.
+ - Can cycle through planet textures using left/right keys
+ - Can toggle clouds with 'c' keyboard press
+ - Can change terrain severity using up/down keys
+
+Design Decisions:
+ - repurposed bloom lab and shapes code
+ - implemented user commands to interact with the graphics
+ - implemented fractal tree algorithm, included an example of the algorithm in a chamber within our planet
+ - altered shape geometry and color computations mostly within shaders, so as to make use of GPU
+
+NOTE: Use CS123_final.pro to build the program. Disregard bloom_lab.pro... removing it seems to cause compiler problems for our code

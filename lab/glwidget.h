@@ -7,6 +7,7 @@
 #include <QTimer>
 #include <QTime>
 #include "sphere.h"
+#include "cone.h"
 #include "camera.h"
 #include "vector.h"
 #include "resourceloader.h"
@@ -38,14 +39,14 @@ protected:
     void loadCubeMap();
     void createShaderPrograms();
     void createFramebufferObjects(int width, int height);
-    void createBlurKernel(int radius, int width, int height, GLfloat* kernel, GLfloat* offsets);
 
     // Drawing code
     void applyOrthogonalCamera(float width, float height);
     void applyPerspectiveCamera(float width, float height);
-    void renderTexturedQuad(int width, int height, bool flip);
+    void renderTexturedQuad(float width, float height, bool flip);
     void renderScene();
     void paintText();
+    void drawtree(Vector3 start, int depth, double angle, double length, double x,double z);
 
 private:
     QTimer m_timer;
@@ -54,16 +55,23 @@ private:
     float m_prevFps, m_fps;
     Vector2 m_prevMousePos;
     OrbitCamera m_camera;
-    sphere *planet_sphere, *cloud_sphere, *water_sphere, *sun_sphere;
+    Sphere *planet_sphere, *cloud_sphere, *water_sphere, *sun_sphere;
+    cone* m_cone;
     // Resources
     QHash<QString, QGLShaderProgram *> m_shaderPrograms; // hash map of all shader programs
     QHash<QString, QGLFramebufferObject *> m_framebufferObjects; // hash map of all framebuffer objects
     GLuint m_skybox; // skybox call list ID
     GLuint m_cubeMap; // cubeMap texture ID
+    QList<GLuint> m_terrains;
+    int terrain_index;
     GLuint m_t1;
     GLuint m_t2;
     GLuint m_t3;
     GLuint m_t4;
+    GLuint m_t5;
+    GLuint m_t6;
+    bool m_clouds;
+    int terrain_smoothing;
     QFont m_font; // font for rendering text
 
 };
