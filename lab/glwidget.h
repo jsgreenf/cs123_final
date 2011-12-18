@@ -10,7 +10,7 @@
 #include "camera.h"
 #include "vector.h"
 #include "resourceloader.h"
-
+#include "cone.h"
 class QGLShaderProgram;
 class QGLFramebufferObject;
 
@@ -47,6 +47,7 @@ protected:
     void renderBlur(int width, int height);
     void renderScene();
     void paintText();
+    void drawtree(Vector3 start, int depth, double angle, double length, double x, double z);
 
 private:
     QTimer m_timer;
@@ -56,6 +57,7 @@ private:
     Vector2 m_prevMousePos;
     OrbitCamera m_camera;
     sphere* m_sphere;
+    cone* m_cone;
     // Resources
     QHash<QString, QGLShaderProgram *> m_shaderPrograms; // hash map of all shader programs
     QHash<QString, QGLFramebufferObject *> m_framebufferObjects; // hash map of all framebuffer objects

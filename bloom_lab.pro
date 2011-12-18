@@ -24,7 +24,8 @@ HEADERS += lab/glwidget.h \
     support/camera.h \
     shape/sphere.h \
     shape/shape.h \
-    lib/CS123Common.h
+    lib/CS123Common.h \
+    shape/cone.h
 
 SOURCES += \
     lab/glwidget.cpp \
@@ -35,7 +36,8 @@ SOURCES += \
     support/main.cpp \
     shape/sphere.cpp \
     support/camera.cpp \
-    shape/shape.cpp
+    shape/shape.cpp \
+    shape/cone.cpp
 
 FORMS += mainwindow.ui \
     support/mainwindow.ui

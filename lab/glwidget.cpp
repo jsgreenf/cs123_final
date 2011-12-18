@@ -35,7 +35,8 @@ GLWidget::GLWidget(QWidget *parent) : QGLWidget(parent),
     m_camera.zoom = 3.5f;
     m_camera.theta = M_PI * 1.5f, m_camera.phi = 0.2f;
     m_camera.fovy = 60.f;
-    m_sphere = new sphere(500,500,false);
+    m_sphere = new sphere(300,300,false);
+    m_cone = new cone(10,10,false);
     connect(&m_timer, SIGNAL(timeout()), this, SLOT(update()));
 }
 
@@ -121,17 +122,17 @@ void GLWidget::loadCubeMap()
 //    fileList.append(new QFile("../cs12* intensity3_final/textures/1.png"));
 //    fileList.append(new QFile("../cs123_final/textures/1.png"));
 //    fileList.append(new QFile("../cs123_final/textures/1.png"));
-    fileList.append(new QFile("../lab09/textures/astra/posx.jpg"));
-    fileList.append(new QFile("../lab09/textures/astra/negx.jpg"));
-    fileList.append(new QFile("../lab09/textures/astra/posy.jpg"));
-    fileList.append(new QFile("../lab09/textures/astra/negy.jpg"));
-    fileList.append(new QFile("../lab09/textures/astra/posz.jpg"));
-    fileList.append(new QFile("../lab09/textures/astra/negz.jpg"));
+    fileList.append(new QFile("../cs123_final/textures/astra/posx.jpg"));
+    fileList.append(new QFile("../cs123_final/textures/astra/negx.jpg"));
+    fileList.append(new QFile("../cs123_final/textures/astra/posy.jpg"));
+    fileList.append(new QFile("../cs123_final/textures/astra/negy.jpg"));
+    fileList.append(new QFile("../cs123_final/textures/astra/posz.jpg"));
+    fileList.append(new QFile("../cs123_final/textures/astra/negz.jpg"));
     m_cubeMap = ResourceLoader::loadCubeMap(fileList);
 
 
     //m_t1 = ResourceLoader::loadtexture2D(new QFile("/course/cs123/data/image/terrain/dirt.JPG"));
-    m_t1 = ResourceLoader::loadtexture2D(new QFile("../cs123_final/textures/planet_Trantor.png"));
+    m_t1 = ResourceLoader::loadtexture2D(new QFile("../cs123_final/textures/leave.jpg"));
     m_t2 = ResourceLoader::loadtexture2D(new QFile("/course/cs123/data/image/terrain/grass.JPG"));
     m_t3 = ResourceLoader::loadtexture2D(new QFile("/course/cs123/data/image/terrain/rock.JPG"));
     m_t4 = ResourceLoader::loadtexture2D(new QFile("/course/cs123/data/image/terrain/snow.JPG"));
@@ -144,11 +145,11 @@ void GLWidget::loadCubeMap()
 void GLWidget::createShaderPrograms()
 {
     const QGLContext *ctx = context();
-    m_shaderPrograms["reflect"] = ResourceLoader::newShaderProgram(ctx, "../lab09/shaders/reflect.vert",
-                                                                   "../lab09/shaders/reflect.frag");
-    m_shaderPrograms["refract"] = ResourceLoader::newShaderProgram(ctx, "../lab09/shaders/refract.vert",
-                                                                   "../lab09/shaders/refract.frag");
-    m_shaderPrograms["brightpass"] = ResourceLoader::newFragShaderProgram(ctx, "../lab09/shaders/brightpass.frag");
+    m_shaderPrograms["reflect"] = ResourceLoader::newShaderProgram(ctx, "../cs123_final/shaders/reflect.vert",
+                                                                   "../cs123_final/shaders/reflect.frag");
+    m_shaderPrograms["refract"] = ResourceLoader::newShaderProgram(ctx, "../cs123_final/shaders/refract.vert",
+                                                                   "../cs123_final/shaders/refract.frag");
+    m_shaderPrograms["brightpass"] = ResourceLoader::newFragShaderProgram(ctx, "../cs123_final/shaders/brightpass.frag");
     m_shaderPrograms["terrain"] = ResourceLoader::newShaderProgram(ctx, "../cs123_final/shaders/terrain.vert",
                                                                    "../cs123_final/shaders/terrain.frag");
     m_shaderPrograms["blur"] = ResourceLoader::newFragShaderProgram(ctx, "../cs123_final/shaders/blur.frag");
@@ -245,6 +246,7 @@ void GLWidget::paintGL()
     renderTexturedQuad(width, height, true);
     glBindTexture(GL_TEXTURE_2D, 0);
 
+    /*
     m_framebufferObjects["fbo_2"]->bind();
     m_shaderPrograms["brightpass"]->bind();
     glBindTexture(GL_TEXTURE_2D, m_framebufferObjects["fbo_1"]->texture());
@@ -274,7 +276,7 @@ void GLWidget::paintGL()
         glDisable(GL_BLEND);
         glBindTexture(GL_TEXTURE_2D, 0);
     }
-
+    */
 
     paintText();
 }
@@ -289,19 +291,47 @@ void GLWidget::renderScene() {
 
     // Enable cube maps and draw the skybox
     glEnable(GL_TEXTURE_CUBE_MAP);
-        glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_CUBE_MAP, m_cubeMap);
     glCallList(m_skybox);
-
+    glDisable(GL_TEXTURE_CUBE_MAP);
     // Enable culling (back) faces for rendering the dragon
     glEnable(GL_CULL_FACE);
-    // Render the dragon with the refraction shader bound
-    glBindTexture(GL_TEXTURE_CUBE_MAP,0);
-    glDisable(GL_TEXTURE_CUBE_MAP);
-    glEnable(GL_TEXTURE_2D);
-//    m_shaderPrograms["terrain"]->bind();
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D,m_t1);
+
+
+    //glColor3f(0,1,0);
+//    glEnable(GL_TEXTURE_2D);
+//    glActiveTexture(GL_TEXTURE0);
+//    glBindTexture(GL_TEXTURE_2D,m_t1);
+    glPushMatrix();
+    renderTexturedQuad(1,1,false);
+    glPopMatrix();
+    //glBindTexture(GL_TEXTURE_2D,0);
+//    glDisable(GL_TEXTURE_CUBE_MAP);
+//    glEnable(GL_TEXTURE_2D);
+//    glActiveTexture(GL_TEXTURE0);
+//    glBindTexture(GL_TEXTURE_2D,m_t1);
+//    m_shaderPrograms["refract"]->bind();
+//    m_shaderPrograms["refract"]->setUniformValue("CubeMap", GL_TEXTURE0);
+//    glPushMatrix();
+  //glTranslatef(-1.25f, 0.f, 0.f);
+
+  //    glCallList(m_dragon.idx);
+
+//    m_sphere->drawshape();
+//    glPopMatrix();
+    //    m_shaderPrograms["terrain"]->release();
+//     m_shaderPrograms["refract"]->release();
+    //    glDisable(GL_TEXTURE_2D)
+//        glEnable(GL_TEXTURE_CUBE_MAP);
+//        glActiveTexture(GL_TEXTURE0);
+    //    glBindTexture(GL_TEXTURE_CUBE_MAP, m_cubeMap);
+//    // Render the dragon with the refraction shader bound
+//    glBindTexture(GL_TEXTURE_CUBE_MAP,0);
+//    glDisable(GL_TEXTURE_CUBE_MAP);
+//    glEnable(GL_TEXTURE_2D);
+////    m_shaderPrograms["terrain"]->bind();
+
+//    glBindTexture(GL_TEXTURE_2D,m_t1);
 //    m_shaderPrograms["terrain"]->setUniformValue("dirtTexture",GL_TEXTURE1);
 //    glActiveTexture(GL_TEXTURE2);
 //    glBindTexture(GL_TEXTURE_2D,m_t2);
@@ -320,8 +350,7 @@ void GLWidget::renderScene() {
 //    m_shaderPrograms["terrain"]->setUniformValue("rockMax",5);
 //    m_shaderPrograms["terrain"]->setUniformValue("snowMin",5);
 //    m_shaderPrograms["terrain"]->setUniformValue("snowMax",10);
-//    m_shaderPrograms["refract"]->bind();
-//    m_shaderPrograms["refract"]->setUniformValue("CubeMap", GL_TEXTURE0);
+
 
     //    glBegin(GL_QUADS);
     //    glTexCoord2f(0,0);
@@ -335,34 +364,34 @@ void GLWidget::renderScene() {
     //    glEnd();
 
 
-    glPushMatrix();
-    //glTranslatef(-1.25f, 0.f, 0.f);
-//    glCallList(m_dragon.idx);
-
-    m_sphere->drawshape();
-    glPopMatrix();
-    m_shaderPrograms["terrain"]->release();
-//    m_shaderPrograms["refract"]->release();
 
 
-//    glEnable(GL_TEXTURE_CUBE_MAP);
-//    // Render the dragon with the reflection shader bound
+    // Render the dragon with the reflection shader bound
 //    m_shaderPrograms["reflect"]->bind();
 //    m_shaderPrograms["reflect"]->setUniformValue("CubeMap", GL_TEXTURE0);
-//    glPushMatrix();
-//    glTranslatef(1.25f,0.f,0.f);
-//    glCallList(m_dragon.idx);
-//    glPopMatrix();
+//    glBindTexture(GL_TEXTURE_2D,m_t2);
+////    glDisable(GL_TEXTURE_2D);
+    glPushMatrix();
+////    glTranslatef(1.25f,0.f,0.f);
+    glColor4f(139/255.0,119/255.0,101/255.0,1);
+    drawtree(Vector3(0,-5,0),6,10,20,0.5,sqrt(1-0.25));
+    //m_cone->drawshape();
+//    glScalef(1.1,1.1,1.1);
+//   m_sphere->drawshape();
+////////    glCallList(m_dragon.idx);
+    glPopMatrix();
+    glColor4f(1,1,1,1);
 //    m_shaderPrograms["reflect"]->release();
 
     // Disable culling, depth testing and cube maps
-    glActiveTexture(GL_TEXTURE0);
+
     glDisable(GL_CULL_FACE);
     glDisable(GL_DEPTH_TEST);
+//    glActiveTexture(GL_TEXTURE0);
 //    glBindTexture(GL_TEXTURE_2D,0);
 //    glDisable(GL_TEXTURE_2D);
-//    glBindTexture(GL_TEXTURE_CUBE_MAP,0);
-//    glDisable(GL_TEXTURE_CUBE_MAP);
+    glBindTexture(GL_TEXTURE_CUBE_MAP,0);
+    glDisable(GL_TEXTURE_CUBE_MAP);
 }
 
 /**
@@ -452,7 +481,7 @@ void GLWidget::resizeGL(int width, int height)
   has been bound before hand.
 
   @param w: the width of the quad to draw
-  @param h: the height of the quad to draw
+  @param h: the height of the quad to drawglTranslatef(0,0.5,0);
   @param flip: flip the texture vertically
 **/
 void GLWidget::renderTexturedQuad(int width, int height, bool flip) {
@@ -544,3 +573,56 @@ void GLWidget::paintText()
     renderText(10, 20, "FPS: " + QString::number((int) (m_prevFps)), m_font);
     renderText(10, 35, "S: Save screenshot", m_font);
 }
+void GLWidget::drawtree(Vector3 start, int depth, double angle, double length, double x,double z){
+
+    Vector3 trans1,trans2,trans3;
+    srand((unsigned)time(0));
+    if (depth >0){
+        double scoef = sin(angle*M_PI/180);
+        double ccoef = cos(angle*M_PI/180);
+
+        glPushMatrix();
+        trans3 = Vector3(start.x - sqrt(scoef*length)*z,start.y+ccoef*length/2.0,start.z +sqrt(scoef*length)*x);
+        trans2 = Vector3(start.x - sqrt(scoef*length)*z*1.5,start.y+ccoef*length/2.0*1.5,start.z +sqrt(scoef*length)*x*1.5);
+        trans1 = Vector3(start.x - sqrt(scoef*length)*z*0.5,start.y+ccoef*length/2.0 *0.5,start.z + sqrt(scoef*length)*x*0.5);
+
+        glTranslatef(trans3.x,trans3.y,trans3.z);
+
+
+        glRotatef(angle,x,0,z);
+        glScalef(pow(1.3,depth)/5,length,pow(1.3,depth)/5);
+
+        glColor4f(139/255.0,119/255.0,101/255.0,1);
+        m_cone->drawshape();
+
+        glPopMatrix();
+
+        if (depth ==1){
+            glColor3f(0,1,0);
+            glEnable(GL_TEXTURE_2D);
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D,m_t1);
+            glPushMatrix();
+            glTranslatef(trans3.x,trans3.y,trans3.z);
+            glRotatef(angle,x,0,z);
+            renderTexturedQuad(1,2,false);
+            glPopMatrix();
+            glBindTexture(GL_TEXTURE_2D,0);
+        }
+
+
+        drawtree(trans1,depth-1,angle-20,length*2/3,0.7,-sqrt(1-0.7*0.7));
+        drawtree(trans2,depth-1,angle+20,length*2/3,-0.9,-sqrt(1-0.9*0.9));
+        drawtree(trans3,depth-1,angle+20,length*2/3,0.2,sqrt(1-0.2*0.2));
+
+
+
+
+
+
+    }
+
+
+
+}
+

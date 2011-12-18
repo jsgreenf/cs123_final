@@ -1,0 +1,16 @@
+#ifndef CONE_H
+#define CONE_H
+#include "shape.h"
+class cone : public shape
+{
+public:
+    cone(int para1,int para2,bool drawNormals);
+    virtual ~cone();
+    void drawshape();
+
+protected:
+    void makearray();
+
+};
+
+#endif // CONE_H

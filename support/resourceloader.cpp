@@ -64,7 +64,7 @@ GLuint ResourceLoader::loadtexture2D(QFile * file)
     image.load(file->fileName());
     image = image.mirrored(false, true);
     texture = QGLWidget::convertToGLFormat(image);
-    texture = texture.scaledToWidth(1024, Qt::SmoothTransformation);
+    //texture = texture.scaledToWidth(1024, Qt::SmoothTransformation);
     glTexImage2D(GL_TEXTURE_2D, 3, 3, texture.width(), texture.height(), 0, GL_RGBA,GL_UNSIGNED_BYTE, texture.bits());
     gluBuild2DMipmaps(GL_TEXTURE_2D, 3, texture.width(), texture.height(), GL_RGBA, GL_UNSIGNED_BYTE, texture.bits());
 
