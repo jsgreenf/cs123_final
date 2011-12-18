@@ -133,7 +133,7 @@ void GLWidget::loadCubeMap()
 
     //m_t1 = ResourceLoader::loadtexture2D(new QFile("/course/cs123/data/image/terrain/dirt.JPG"));
     m_t1 = ResourceLoader::loadtexture2D(new QFile("../cs123_final/textures/leave.jpg"));
-    m_t2 = ResourceLoader::loadtexture2D(new QFile("/course/cs123/data/image/terrain/grass.JPG"));
+    m_t2 = ResourceLoader::loadtexture2D(new QFile("../cs123_final/textures/tree.jpg"));
     m_t3 = ResourceLoader::loadtexture2D(new QFile("/course/cs123/data/image/terrain/rock.JPG"));
     m_t4 = ResourceLoader::loadtexture2D(new QFile("/course/cs123/data/image/terrain/snow.JPG"));
 
@@ -375,6 +375,7 @@ void GLWidget::renderScene() {
 ////    glTranslatef(1.25f,0.f,0.f);
     glColor4f(139/255.0,119/255.0,101/255.0,1);
     drawtree(Vector3(0,-5,0),6,10,20,0.5,sqrt(1-0.25));
+
     //m_cone->drawshape();
 //    glScalef(1.1,1.1,1.1);
 //   m_sphere->drawshape();
@@ -576,6 +577,7 @@ void GLWidget::paintText()
 void GLWidget::drawtree(Vector3 start, int depth, double angle, double length, double x,double z){
 
     Vector3 trans1,trans2,trans3;
+
     srand((unsigned)time(0));
     if (depth >0){
         double scoef = sin(angle*M_PI/180);
@@ -583,19 +585,23 @@ void GLWidget::drawtree(Vector3 start, int depth, double angle, double length, d
 
         glPushMatrix();
         trans3 = Vector3(start.x - sqrt(scoef*length)*z,start.y+ccoef*length/2.0,start.z +sqrt(scoef*length)*x);
-        trans2 = Vector3(start.x - sqrt(scoef*length)*z*1.5,start.y+ccoef*length/2.0*1.5,start.z +sqrt(scoef*length)*x*1.5);
-        trans1 = Vector3(start.x - sqrt(scoef*length)*z*0.5,start.y+ccoef*length/2.0 *0.5,start.z + sqrt(scoef*length)*x*0.5);
+        trans2 = Vector3(start.x - sqrt(scoef*length)*z*1.2,start.y+ccoef*length/2.0*1.2,start.z +sqrt(scoef*length)*x*1.2);
+        trans1 = Vector3(start.x - sqrt(scoef*length)*z*0.5,start.y+ccoef*length/2.0*0.5,start.z + sqrt(scoef*length)*x*0.5);
 
+        glEnable(GL_TEXTURE_2D);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D,m_t2);
         glTranslatef(trans3.x,trans3.y,trans3.z);
 
 
         glRotatef(angle,x,0,z);
-        glScalef(pow(1.3,depth)/5,length,pow(1.3,depth)/5);
+        glScalef(pow(1.4,depth)/5,length,pow(1.4,depth)/5);
 
         glColor4f(139/255.0,119/255.0,101/255.0,1);
         m_cone->drawshape();
 
         glPopMatrix();
+        glBindTexture(GL_TEXTURE_2D,0);
 
         if (depth ==1){
             glColor3f(0,1,0);
@@ -607,13 +613,14 @@ void GLWidget::drawtree(Vector3 start, int depth, double angle, double length, d
             glRotatef(angle,x,0,z);
             renderTexturedQuad(1,2,false);
             glPopMatrix();
-            glBindTexture(GL_TEXTURE_2D,0);
+
         }
 
 
-        drawtree(trans1,depth-1,angle-20,length*2/3,0.7,-sqrt(1-0.7*0.7));
+        drawtree(trans1,depth-1,angle+15,length*2/3,0.7,-sqrt(1-0.7*0.7));
         drawtree(trans2,depth-1,angle+20,length*2/3,-0.9,-sqrt(1-0.9*0.9));
-        drawtree(trans3,depth-1,angle+20,length*2/3,0.2,sqrt(1-0.2*0.2));
+        drawtree(trans3,depth-1,angle+20,length*2/3,0.4,sqrt(1-0.4*0.4));
+
 
 
 

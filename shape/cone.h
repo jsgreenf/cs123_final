@@ -10,6 +10,7 @@ public:
 
 protected:
     void makearray();
+    virtual Vector2 get_texture(Vector3 p_ins);
 
 };
 

@@ -16,6 +16,7 @@ cone::cone(int para1,int para2,bool drawNormals):shape(para1,para2,drawNormals)
 }
 cone::~cone(){
     delete[] m_coordinates;
+    delete[] m_textures;
 
 }
 void cone::makearray(){
@@ -25,6 +26,7 @@ void cone::makearray(){
     int size = 6*m_para2*(2*m_para1 -1);
     delete[] m_coordinates;
     m_coordinates = new double[size][4];
+    m_textures = new double[size][2];
     double boundry_array[m_para2][4];
     double theta = 0;
 
@@ -141,6 +143,36 @@ void cone::makearray(){
 
 
     }
+    for(int i =0;i<m_para2*(2*m_para1 -1);i++){
+
+        Vector2 a = get_texture(Vector3(m_coordinates[i*3][0],-0.5, m_coordinates[3*i][2]));
+        m_textures[i*3][0] = a.x;
+        m_textures[i*3][1] = a.y;
+        a = get_texture(Vector3(m_coordinates[i*3+1][0],-0.5, m_coordinates[3*i+1][2]));
+        m_textures[i*3+1][0] = a.x;
+        m_textures[i*3+1][1] = a.y;
+        a = get_texture(Vector3(m_coordinates[i*3+2][0],-0.5, m_coordinates[3*i+2][2]));
+        m_textures[i*3+2][0] = a.x;
+        m_textures[i*3+2][1] = a.y;
+
+
+    }
+
+    for(int i =0;i<m_para2*(2*m_para1 -1);i++){
+        Vector2 a = get_texture(Vector3(m_coordinates[3*m_para2*(2*m_para1 -1)+i*3][0],m_coordinates[3*m_para2*(2*m_para1 -1)+i*3][1], m_coordinates[3*m_para2*(2*m_para1 -1)+3*i][2]));
+        m_textures[3*m_para2*(2*m_para1 -1)+i*3][0] = a.x;
+        m_textures[3*m_para2*(2*m_para1 -1)+i*3][1] = a.y;
+        a = get_texture(Vector3(m_coordinates[3*m_para2*(2*m_para1 -1)+3*i+1][0],m_coordinates[3*m_para2*(2*m_para1 -1)+i*3+1][1], m_coordinates[3*m_para2*(2*m_para1 -1)+3*i+1][2]));
+        m_textures[3*m_para2*(2*m_para1 -1)+i*3+1][0] = a.x;
+        m_textures[3*m_para2*(2*m_para1 -1)+i*3+1][1] = a.y;
+        a = get_texture(Vector3(m_coordinates[3*m_para2*(2*m_para1 -1)+3*i+2][0],m_coordinates[3*m_para2*(2*m_para1 -1)+i*3+2][1], m_coordinates[3*m_para2*(2*m_para1 -1)+3*i+2][2]));
+        m_textures[3*m_para2*(2*m_para1 -1)+i*3+2][0] = a.x;
+        m_textures[3*m_para2*(2*m_para1 -1)+i*3+2][1] = a.y;
+
+
+
+
+    }
 
 }
 void cone::drawshape(){
@@ -148,9 +180,11 @@ void cone::drawshape(){
     for(int i =0;i<m_para2*(2*m_para1 -1);i++){
         glBegin(GL_TRIANGLES);
         glNormal3f(0,-1 ,0);
+        glTexCoord2f(m_textures[i*3][0],m_textures[i*3][1]);
         glVertex3f(m_coordinates[i*3][0],-0.5, m_coordinates[3*i][2]);
-
+        glTexCoord2f(m_textures[i*3+1][0],m_textures[i*3+1][1]);
         glVertex3f(m_coordinates[3*i+1][0],-0.5, m_coordinates[3*i+1][2]);
+        glTexCoord2f(m_textures[i*3+2][0],m_textures[i*3+2][1]);
         glVertex3f(m_coordinates[3*i+2][0],-0.5, m_coordinates[3*i+2][2]);
 
         glEnd();
@@ -161,16 +195,50 @@ void cone::drawshape(){
 
         l = sqrt(5*(m_coordinates[3*m_para2*(2*m_para1 -1)+i*3][0]*m_coordinates[3*m_para2*(2*m_para1 -1)+i*3][0]+ m_coordinates[3*m_para2*(2*m_para1 -1)+3*i][2]* m_coordinates[3*m_para2*(2*m_para1 -1)+3*i][2]));
         glNormal3f(2*m_coordinates[3*m_para2*(2*m_para1 -1)+i*3][0]/l,1/sqrt(5),2*m_coordinates[3*m_para2*(2*m_para1 -1)+3*i][2]/l);
+        glTexCoord2f(m_textures[3*m_para2*(2*m_para1 -1)+i*3][0],m_textures[3*m_para2*(2*m_para1 -1)+i*3][1]);
         glVertex3f(m_coordinates[3*m_para2*(2*m_para1 -1)+i*3][0],m_coordinates[3*m_para2*(2*m_para1 -1)+i*3][1], m_coordinates[3*m_para2*(2*m_para1 -1)+3*i][2]);
         l = sqrt(5*(m_coordinates[3*m_para2*(2*m_para1 -1)+i*3+1][0]*m_coordinates[3*m_para2*(2*m_para1 -1)+i*3+1][0]+ m_coordinates[3*m_para2*(2*m_para1 -1)+3*i+1][2]* m_coordinates[3*m_para2*(2*m_para1 -1)+3*i+1][2]));
         glNormal3f(2*m_coordinates[3*m_para2*(2*m_para1 -1)+i*3+1][0]/l,1/sqrt(5),2*m_coordinates[3*m_para2*(2*m_para1 -1)+3*i+1][2]/l);
+        glTexCoord2f(m_textures[3*m_para2*(2*m_para1 -1)+3*i+1][0],m_textures[3*m_para2*(2*m_para1 -1)+3*i+1][1]);
         glVertex3f(m_coordinates[3*m_para2*(2*m_para1 -1)+3*i+1][0],m_coordinates[3*m_para2*(2*m_para1 -1)+i*3+1][1], m_coordinates[3*m_para2*(2*m_para1 -1)+3*i+1][2]);
         l = sqrt(5*(m_coordinates[3*m_para2*(2*m_para1 -1)+i*3+2][0]*m_coordinates[3*m_para2*(2*m_para1 -1)+i*3+2][0]+ m_coordinates[3*m_para2*(2*m_para1 -1)+3*i+2][2]* m_coordinates[3*m_para2*(2*m_para1 -1)+3*i+2][2]));
         glNormal3f(2*m_coordinates[3*m_para2*(2*m_para1 -1)+i*3+2][0]/l,1/sqrt(5),2*m_coordinates[3*m_para2*(2*m_para1 -1)+3*i+2][2]/l);
+        glTexCoord2f(m_textures[3*m_para2*(2*m_para1 -1)+3*i+2][0],m_textures[3*m_para2*(2*m_para1 -1)+3*i+2][1]);
         glVertex3f(m_coordinates[3*m_para2*(2*m_para1 -1)+3*i+2][0],m_coordinates[3*m_para2*(2*m_para1 -1)+i*3+2][1], m_coordinates[3*m_para2*(2*m_para1 -1)+3*i+2][2]);
 
 
         glEnd();
+    }
+
+}
+Vector2 cone::get_texture(Vector3 p_ins){
+    double u,v;
+    if((p_ins.y <= -0.5+EPSILON)&&(p_ins.y>= -0.5-EPSILON)){
+
+
+        return Vector2(p_ins.x+ 0.5 , 0.5 - p_ins.z);
+    }
+    else if((p_ins.y >= 0.5 -EPSILON)&&(p_ins.y<=0.5+EPSILON)){
+
+        return Vector2(0.5, 0);
+    }
+    else{
+        double theta;
+        theta = atan2(p_ins.z,p_ins.x);
+        v = 0.5-p_ins.y;
+        if (p_ins.z <0){
+
+            u = (-theta)/(2*M_PI);
+
+
+        }
+        else{
+
+            u = 1- (theta/(2*M_PI));
+
+
+        }
+        return Vector2(u,v);
     }
 
 }
